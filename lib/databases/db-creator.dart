@@ -54,7 +54,7 @@ class DatabaseHelper {
   /// Crée la table Content (Articles, Tutorials, Flashcards)
   String initContentTable()  {
     var createContentTable  = ('''
-      CREATE TABLE Articles (
+      CREATE TABLE Content (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         tags TEXT NOT NULL,

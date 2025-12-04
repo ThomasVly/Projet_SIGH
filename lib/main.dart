@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'database_test_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -67,6 +68,13 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _navigateToTestDB() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const DatabaseTestPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -108,6 +116,15 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 40),
+            ElevatedButton.icon(
+              onPressed: _navigateToTestDB,
+              icon: const Icon(Icons.storage),
+              label: const Text('Tester la Base de Données'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
             ),
           ],
         ),
