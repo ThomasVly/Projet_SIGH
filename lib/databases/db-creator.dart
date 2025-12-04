@@ -45,49 +45,26 @@ class DatabaseHelper {
         localisation TEXT NOT NULL,
         fullHours DATETIME,
         offHours DATETIME,
-        nbPoints INTEGER NOT NULL,
+        nbPoints INTEGER NOT NULL
       )
     ''');
     return createUserTable;
   }
 
-  /// Crée la table Articles
-  String initArticlesTable()  {
-    var createArticlesTable  = ('''
+  /// Crée la table Content (Articles, Tutorials, Flashcards)
+  String initContentTable()  {
+    var createContentTable  = ('''
       CREATE TABLE Articles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        tags TEXT NOT NULL,
         hasBeenRead BOOLEAN NOT NULL,
         notation INTEGER NOT NULL,
         isFavorite BOOLEAN NOT NULL,
+        type TEXT NOT NULL
       )
     ''');
-    return createArticlesTable;
-  }
-
-  /// Crée la table Tutorials
-  String initTutorialsTable()  {
-    var createTutorialsTable  = ('''
-      CREATE TABLE Tutorials (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        hasBeenRead BOOLEAN NOT NULL,
-        notation INTEGER NOT NULL,
-        isFavorite BOOLEAN NOT NULL,
-      )
-    ''');
-    return createTutorialsTable;
-  }
-
-  /// Crée la table Flashcards
-  String initFlashcardsTable()  {
-    var createFlashcardsTable  = ('''
-      CREATE TABLE Flashcards (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        hasBeenRead BOOLEAN NOT NULL,
-        notation INTEGER NOT NULL,
-        isFavorite BOOLEAN NOT NULL,
-      )
-    ''');
-    return createFlashcardsTable;
+    return createContentTable;
   }
 
   /// Crée la table Quizzes
@@ -98,7 +75,8 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         completed BOOLEAN NOT NULL,
         score INTEGER NOT NULL,
-        completionTime BOOLEAN NOT NULL,
+        completionTime INTEGER NOT NULL,
+        reward INTEGER NOT NULL
       )
     ''');
     return createQuizzesTable;
@@ -108,9 +86,9 @@ class DatabaseHelper {
   String initChallengesTable()  {
     var createChallengesTable  = ('''
       CREATE TABLE Challenges (
-        id DATETIME PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         completed BOOLEAN NOT NULL,
-        score INTEGER NOT NULL,
+        reward INTEGER NOT NULL
       )
     ''');
     return createChallengesTable;
@@ -121,8 +99,8 @@ class DatabaseHelper {
     var createBillsTable  = ('''
       CREATE TABLE Bills (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date DATETIME NOT NULL,
-        content TEXT NOT NULL,
+        date TEXT NOT NULL,
+        content TEXT NOT NULL
       )
     ''');
     return createBillsTable;
@@ -133,8 +111,9 @@ class DatabaseHelper {
     var createAlertsTable  = ('''
       CREATE TABLE Alerts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date DATETIME NOT NULL,
+        date TEXT NOT NULL,
         content TEXT NOT NULL,
+        type TEXT NOT NULL
       )
     ''');
     return createAlertsTable;
@@ -159,11 +138,12 @@ class DatabaseHelper {
       CREATE TABLE Equipments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        moyConso INTEGER NOT NULL,
+        energyType TEXT NOT NULL,
         moyUseTime INTEGER NOT NULL,
+        moyConso INTEGER NOT NULL,
         configuredConso INTEGER NOT NULL,
         configuredUseTime INTEGER NOT NULL,
-        configured BOOLEAN NOT NULL,
+        configured BOOLEAN NOT NULL
       )
     ''');
     return createEquipmentsTable;
@@ -177,7 +157,8 @@ class DatabaseHelper {
         badgeTitle TEXT NOT NULL,
         badgeDescription TEXT NOT NULL,
         badgeIcon TEXT NOT NULL,
-        badgeEarnedDate DATETIME NOT NULL,
+        badgeEarnedDate TEXT NOT NULL,
+        badgeReward INTEGER NOT NULL
       )
     ''');
     return createBadgesTable;
@@ -185,9 +166,7 @@ class DatabaseHelper {
 
   Future _createDB(Database db, int version) async {
     await db.execute(initUserTable());
-    await db.execute(initArticlesTable());
-    await db.execute(initTutorialsTable());
-    await db.execute(initFlashcardsTable());
+    await db.execute(initContentTable());
     await db.execute(initQuizzesTable());
     await db.execute(initChallengesTable());
     await db.execute(initBillsTable());
@@ -200,11 +179,9 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_user ON Users(username)');
     await db.execute('CREATE INDEX idx_equipment ON Equipments(name)');
     await db.execute('CREATE INDEX idx_badge ON Badges(badgeTitle)');
-    await db.execute('CREATE INDEX idx_challenge ON Challenges(date)');
+    await db.execute('CREATE INDEX idx_challenge ON Challenges(id)');
     await db.execute('CREATE INDEX idx_quiz ON Quizzes(name)');
-    await db.execute('CREATE INDEX idx_article ON Articles(id)');
-    await db.execute('CREATE INDEX idx_tutorial ON Tutorials(id)');
-    await db.execute('CREATE INDEX idx_flashcard ON Flashcards(id)');
+    await db.execute('CREATE INDEX idx_content ON Content(title,tags,type)');
   }
 
   /// Ferme la base de données
