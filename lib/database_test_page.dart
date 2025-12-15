@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'databases/db-creator.dart';
-import 'databases/db-inserts.dart';
-import 'databases/db-queries.dart';
+import 'shared/local_database/db-creator.dart';
+import 'shared/local_database/db-inserts.dart';
+import 'shared/local_database/db-queries.dart';
 
 class DatabaseTestPage extends StatefulWidget {
   const DatabaseTestPage({super.key});
