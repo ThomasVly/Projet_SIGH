@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'database_test_page.dart';
 import 'pages/home/home_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
+import 'shared/firebase/firebase_service.dart';
 
-void main() {
+void main() async {
+  await FirebaseService.initialize();
   runApp(const MyApp());
 }
 
@@ -49,7 +51,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: _pages[0],
       bottomNavigationBar: NavbarWidget(
         currentIndex: _currentIndex,
         onTap: _onNavbarTap,
