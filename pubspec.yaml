@@ -35,6 +35,10 @@ dependencies:
   flutter_dotenv: ^6.0.0
   http: ^0.13.6
   cupertino_icons: ^1.0.8
+
+  # Firebase
+  firebase_core: ^3.8.1
+  cloud_firestore: ^5.5.2
   flutter_svg: 2.0.9
 
 dev_dependencies:
@@ -61,10 +65,10 @@ flutter:
   assets:
     - assets/images/Header_general.jpg
     - assets/images/logo_sigh.webp
-  # To add assets to your application, add an assets section, like this:
-  assets:
     - assets/images/
     - assets/images/buildings.svg
+  # To add assets to your application, add an assets section, like this:
+
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
