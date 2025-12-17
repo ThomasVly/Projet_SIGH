@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'pages/home/home_page.dart';
 import 'pages/profile/profile_page.dart';
 import 'pages/notifications/notifications_history_page.dart';
@@ -8,9 +7,6 @@ import 'common-widget/header/header_widget.dart';
 
 
 void main() {
-  // Mode plein écran immersif - masque la barre de notification et la barre de navigation
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
   runApp(const MyApp());
 }
 
