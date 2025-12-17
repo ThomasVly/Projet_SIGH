@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'database_test_page.dart';
+import 'pages/badges/badges_page.dart';
 import 'pages/home/home_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
 
@@ -34,7 +35,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _pages = [
     const HomePage(),
-    const Scaffold(backgroundColor: Colors.white, body: SizedBox.expand()),
+    const BadgesPage(),
     const Scaffold(backgroundColor: Colors.white, body: SizedBox.expand()),
     const Scaffold(backgroundColor: Colors.white, body: SizedBox.expand()),
     const Scaffold(backgroundColor: Colors.white, body: SizedBox.expand()),
