@@ -5,8 +5,10 @@ import 'pages/notifications/notifications_history_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
 import 'common-widget/header/header_widget.dart';
 
+import 'shared/firebase/firebase_service.dart';
 
-void main() {
+void main() async {
+  await FirebaseService.initialize();
   runApp(const MyApp());
 }
 
