@@ -1,5 +1,5 @@
 import 'package:sqflite/sqflite.dart';
-import '../db-creator.dart';
+import '../../../shared/local_database/db-creator.dart';
 import '../models/content_model.dart';
 
 /// Service pour gérer les opérations CRUD sur la table Content
@@ -135,5 +135,67 @@ class ContentService {
     final db = await _dbHelper.database;
     return await db.delete('Content');
   }
-}
 
+  /// Récupère l'article à la une
+  Future<ContentModel?> getFeaturedContent() async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'Content',
+      where: 'isFeatured = ?',
+      whereArgs: [1],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) return null;
+    return ContentModel.fromMap(maps[0]);
+  }
+
+  /// Recherche par catégorie
+  Future<List<ContentModel>> getContentsByCategory(String category) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'Content',
+      where: 'category = ?',
+      whereArgs: [category],
+    );
+
+    return List.generate(maps.length, (i) {
+      return ContentModel.fromMap(maps[i]);
+    });
+  }
+
+  /// Recherche par tag
+  Future<List<ContentModel>> getContentsByTag(String tag) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'Content',
+      where: 'tags LIKE ?',
+      whereArgs: ['%$tag%'],
+    );
+
+    return List.generate(maps.length, (i) {
+      return ContentModel.fromMap(maps[i]);
+    });
+  }
+
+  /// Récupère tous les tags uniques
+  Future<List<String>> getAllTags() async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query('Content');
+
+    final Set<String> tagsSet = {};
+    for (var map in maps) {
+      final tags = (map['tags'] as String).split(',');
+      for (var tag in tags) {
+        tagsSet.add(tag.trim());
+      }
+    }
+
+    return tagsSet.toList()..sort();
+  }
+
+  /// Réinitialise complètement la base de données
+  Future<void> resetDatabase() async {
+    await _dbHelper.resetDatabase();
+  }
+}

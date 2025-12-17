@@ -7,6 +7,10 @@ class ContentModel {
   final int notation;
   final bool isFavorite;
   final String type; // 'article', 'fiche', 'tutorial'
+  final String category; // 'Chauffage', 'Électricité', 'Lavage', 'Électroménager'
+  final int readingTime; // Temps de lecture en minutes
+  final bool isFeatured; // Article à la une
+  final String pdfUrl; // URL ou chemin du fichier PDF
 
   ContentModel({
     this.id,
@@ -16,6 +20,10 @@ class ContentModel {
     this.notation = 0,
     this.isFavorite = false,
     required this.type,
+    required this.category,
+    required this.readingTime,
+    this.isFeatured = false,
+    required this.pdfUrl,
   });
 
   /// Convertit un objet ContentModel en Map pour SQLite
@@ -28,6 +36,10 @@ class ContentModel {
       'notation': notation,
       'isFavorite': isFavorite ? 1 : 0,
       'type': type,
+      'category': category,
+      'readingTime': readingTime,
+      'isFeatured': isFeatured ? 1 : 0,
+      'pdfUrl': pdfUrl,
     };
   }
 
@@ -41,12 +53,34 @@ class ContentModel {
       notation: map['notation'] as int,
       isFavorite: map['isFavorite'] == 1,
       type: map['type'] as String,
+      category: (map['category'] as String?) ?? 'Électricité', // Valeur par défaut si null
+      readingTime: (map['readingTime'] as int?) ?? 5, // Valeur par défaut si null
+      isFeatured: (map['isFeatured'] ?? 0) == 1,
+      pdfUrl: (map['pdfUrl'] as String?) ?? '',
     );
   }
 
   /// Retourne la liste des tags sous forme de liste
   List<String> getTagsList() {
     return tags.split(',').map((tag) => tag.trim()).toList();
+  }
+
+  /// Retourne l'icône correspondant à la catégorie
+  String getCategoryIcon() {
+    switch (category.toLowerCase()) {
+      case 'chauffage':
+        return '🔥';
+      case 'électricité':
+      case 'electricité':
+        return '💡';
+      case 'lavage':
+        return '🧺';
+      case 'électroménager':
+      case 'electromenager':
+        return '🏠';
+      default:
+        return '📌';
+    }
   }
 
   /// Copie l'objet avec des modifications
@@ -58,6 +92,10 @@ class ContentModel {
     int? notation,
     bool? isFavorite,
     String? type,
+    String? category,
+    int? readingTime,
+    bool? isFeatured,
+    String? pdfUrl,
   }) {
     return ContentModel(
       id: id ?? this.id,
@@ -67,7 +105,10 @@ class ContentModel {
       notation: notation ?? this.notation,
       isFavorite: isFavorite ?? this.isFavorite,
       type: type ?? this.type,
+      category: category ?? this.category,
+      readingTime: readingTime ?? this.readingTime,
+      isFeatured: isFeatured ?? this.isFeatured,
+      pdfUrl: pdfUrl ?? this.pdfUrl,
     );
   }
 }
-

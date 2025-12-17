@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'database_test_page.dart';
 import 'pages/home/home_page.dart';
+import 'pages/conseils/conseils_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
 
 void main() {
@@ -33,11 +34,11 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    const HomePage(),
-    const Scaffold(backgroundColor: Colors.white, body: SizedBox.expand()),
-    const Scaffold(backgroundColor: Colors.white, body: SizedBox.expand()),
-    const Scaffold(backgroundColor: Colors.white, body: SizedBox.expand()),
-    const Scaffold(backgroundColor: Colors.white, body: SizedBox.expand()),
+    const Scaffold(backgroundColor: Colors.white, body: Center(child: Text('Quizz'))), // Index 0
+    const Scaffold(backgroundColor: Colors.white, body: Center(child: Text('Analyse'))), // Index 1
+    const HomePage(), // Index 2 - Accueil
+    const ConseilsPage(), // Index 3 - Conseils
+    const Scaffold(backgroundColor: Colors.white, body: Center(child: Text('Paramètres'))), // Index 4
   ];
 
   void _onNavbarTap(int index) {

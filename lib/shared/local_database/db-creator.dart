@@ -29,11 +29,42 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 4, // Incrémentation de la version pour forcer la mise à jour
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
       onOpen: (db) async {
       },
     );
+  }
+
+  /// Migration de la base de données
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 4) {
+      // Ajouter les nouvelles colonnes à la table Content si elles n'existent pas
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN category TEXT NOT NULL DEFAULT "Électricité"');
+      } catch (e) {
+        print('Colonne category déjà existante ou erreur: $e');
+      }
+
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN readingTime INTEGER NOT NULL DEFAULT 5');
+      } catch (e) {
+        print('Colonne readingTime déjà existante ou erreur: $e');
+      }
+
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN isFeatured BOOLEAN NOT NULL DEFAULT 0');
+      } catch (e) {
+        print('Colonne isFeatured déjà existante ou erreur: $e');
+      }
+
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN pdfUrl TEXT NOT NULL DEFAULT ""');
+      } catch (e) {
+        print('Colonne pdfUrl déjà existante ou erreur: $e');
+      }
+    }
   }
 
   /// Crée la table Users
@@ -58,10 +89,14 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         tags TEXT NOT NULL,
-        hasBeenRead BOOLEAN NOT NULL,
+        hasBeenRead BOOLEAN NOT NULL DEFAULT 0,
         notation INTEGER NOT NULL,
-        isFavorite BOOLEAN NOT NULL,
-        type TEXT NOT NULL
+        isFavorite BOOLEAN NOT NULL DEFAULT 0,
+        type TEXT NOT NULL,
+        category TEXT NOT NULL,
+        readingTime INTEGER NOT NULL,
+        isFeatured BOOLEAN NOT NULL DEFAULT 0,
+        pdfUrl TEXT NOT NULL
       )
     ''');
     return createContentTable;
@@ -197,5 +232,20 @@ class DatabaseHelper {
     print('Chemin de la base de données SQLite :');
     print(path);
     print('===========================================');
+  }
+
+  /// Supprime complètement la base de données (utile pour les migrations importantes)
+  Future<void> deleteDatabase() async {
+    final path = await getDatabasePath();
+    await databaseFactory.deleteDatabase(path);
+    _database = null;
+    print('Base de données supprimée avec succès');
+  }
+
+  /// Réinitialise complètement la base de données
+  Future<void> resetDatabase() async {
+    await deleteDatabase();
+    _database = await _initDB('TEMPDBNAME.db');
+    print('Base de données réinitialisée avec succès');
   }
 }
