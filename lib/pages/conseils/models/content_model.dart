@@ -72,11 +72,15 @@ class ContentModel {
         return '🔥';
       case 'électricité':
       case 'electricité':
+      case 'électricite':
+      case 'electricite':
         return '💡';
       case 'lavage':
         return '🧺';
       case 'électroménager':
       case 'electromenager':
+      case 'electroménager':
+      case 'électromenager':
         return '🏠';
       default:
         return '📌';

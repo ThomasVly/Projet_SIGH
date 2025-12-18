@@ -6,7 +6,7 @@ class ContentFakeData {
   /// Retourne une liste de contenus factices
   static List<ContentModel> getFakeContents() {
     return [
-      // Article À LA UNE
+      // Article À LA UNE - Utilise le PDF local pour les tests
       ContentModel(
         title: '5 gestes simples pour économiser 20% sur votre facture',
         tags: 'économie, éco-gestes, électricité',
@@ -15,7 +15,7 @@ class ContentFakeData {
         readingTime: 5,
         notation: 5,
         isFeatured: true,
-        pdfUrl: 'https://www.ecologie.gouv.fr/sites/default/files/guide-ademe-reduire-facture-electricite.pdf',
+        pdfUrl: 'assets/files/PDF_example.pdf',
       ),
 
       // Fiches info - Chauffage
@@ -26,7 +26,7 @@ class ContentFakeData {
         category: 'Chauffage',
         readingTime: 3,
         notation: 5,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/guide-pratique-chauffage.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=7091',
       ),
 
       ContentModel(
@@ -36,7 +36,7 @@ class ContentFakeData {
         category: 'Chauffage',
         readingTime: 6,
         notation: 4,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/chauffage-electrique-economies.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=2142',
       ),
 
       ContentModel(
@@ -46,7 +46,7 @@ class ContentFakeData {
         category: 'Chauffage',
         readingTime: 8,
         notation: 5,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/guide-isolation-thermique.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=4905',
       ),
 
       // Fiches info - Électricité
@@ -57,7 +57,7 @@ class ContentFakeData {
         category: 'Électricité',
         readingTime: 4,
         notation: 4,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/comprendre-facture-electricite.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=2958',
       ),
 
       ContentModel(
@@ -67,7 +67,7 @@ class ContentFakeData {
         category: 'Électricité',
         readingTime: 3,
         notation: 5,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/appareils-veille-couts.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=826',
       ),
 
       ContentModel(
@@ -77,7 +77,7 @@ class ContentFakeData {
         category: 'Électricité',
         readingTime: 5,
         notation: 4,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/guide-eclairage-led.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=2146',
       ),
 
       // Fiches info - Électroménager
@@ -88,7 +88,7 @@ class ContentFakeData {
         category: 'Électroménager',
         readingTime: 7,
         notation: 4,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/guide-electromenager.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=827',
       ),
 
       ContentModel(
@@ -98,7 +98,7 @@ class ContentFakeData {
         category: 'Électroménager',
         readingTime: 3,
         notation: 3,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/entretien-refrigerateur.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=2144',
       ),
 
       // Tutoriels - Chauffage
@@ -109,7 +109,7 @@ class ContentFakeData {
         category: 'Chauffage',
         readingTime: 15,
         notation: 5,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/tuto-thermostat-programmable.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=2145',
       ),
 
       ContentModel(
@@ -119,7 +119,7 @@ class ContentFakeData {
         category: 'Chauffage',
         readingTime: 10,
         notation: 4,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/tuto-purger-radiateurs.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=2141',
       ),
 
       // Tutoriels - Électricité
@@ -130,7 +130,7 @@ class ContentFakeData {
         category: 'Électricité',
         readingTime: 5,
         notation: 3,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/tuto-box-internet.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=826',
       ),
 
       ContentModel(
@@ -140,7 +140,7 @@ class ContentFakeData {
         category: 'Électricité',
         readingTime: 8,
         notation: 4,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/tuto-multiprises-intelligentes.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=2959',
       ),
 
       // Tutoriels - Lavage
@@ -151,7 +151,7 @@ class ContentFakeData {
         category: 'Lavage',
         readingTime: 6,
         notation: 4,
-        pdfUrl: 'https://www.ademe.fr/sites/default/files/assets/documents/tuto-lave-linge.pdf',
+        pdfUrl: 'https://librairie.ademe.fr/index.php?controller=attachment&id_attachment=2143',
       ),
     ];
   }

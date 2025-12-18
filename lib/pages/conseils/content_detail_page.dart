@@ -3,6 +3,7 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart' show rootBundle;
 import 'models/content_model.dart';
 import 'services/content_service.dart';
 
@@ -72,10 +73,16 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
           throw Exception('Erreur de téléchargement du PDF');
         }
       }
-      // Si c'est un chemin local (assets)
+      // Si c'est un asset local Flutter
       else {
+        // Copier l'asset dans un fichier temporaire car PDFView ne peut pas lire directement depuis les assets
+        final byteData = await rootBundle.load(pdfUrl);
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/asset_${widget.content.id}.pdf');
+        await file.writeAsBytes(byteData.buffer.asUint8List());
+
         setState(() {
-          _localPdfPath = pdfUrl;
+          _localPdfPath = file.path;
           _isLoading = false;
         });
       }
@@ -273,66 +280,71 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
       );
     }
 
-    return Column(
+    return Stack(
       children: [
-        // Indicateur de page
+        // Viewer PDF
+        PDFView(
+          filePath: _localPdfPath!,
+          enableSwipe: true,
+          swipeHorizontal: false,
+          autoSpacing: true,
+          pageFling: true,
+          pageSnap: true,
+          defaultPage: 0,
+          fitPolicy: FitPolicy.WIDTH,
+          preventLinkNavigation: false,
+          onRender: (pages) {
+            setState(() {
+              _totalPages = pages ?? 0;
+            });
+          },
+          onError: (error) {
+            setState(() {
+              _errorMessage = 'Erreur lors de l\'affichage du PDF: $error';
+            });
+          },
+          onPageError: (page, error) {
+            print('Erreur page $page: $error');
+          },
+          onViewCreated: (PDFViewController pdfViewController) {
+            // Contrôleur PDF disponible si besoin
+          },
+          onPageChanged: (int? page, int? total) {
+            setState(() {
+              _currentPage = page ?? 0;
+              _totalPages = total ?? 0;
+            });
+          },
+        ),
+
+        // Indicateur de page - bulle en haut à droite
         if (_totalPages > 0)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            color: const Color(0xFFF5F5F5),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.picture_as_pdf, color: Color(0xFF003366), size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Page ${_currentPage + 1} sur $_totalPages',
-                  style: const TextStyle(
-                    color: Color(0xFF003366),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+          Positioned(
+            top: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF003366),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
+                ],
+              ),
+              child: Text(
+                '${_currentPage + 1}/$_totalPages',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
+              ),
             ),
           ),
-
-        // Viewer PDF
-        Expanded(
-          child: PDFView(
-            filePath: _localPdfPath!,
-            enableSwipe: true,
-            swipeHorizontal: false,
-            autoSpacing: true,
-            pageFling: true,
-            pageSnap: true,
-            defaultPage: 0,
-            fitPolicy: FitPolicy.WIDTH,
-            preventLinkNavigation: false,
-            onRender: (pages) {
-              setState(() {
-                _totalPages = pages ?? 0;
-              });
-            },
-            onError: (error) {
-              setState(() {
-                _errorMessage = 'Erreur lors de l\'affichage du PDF: $error';
-              });
-            },
-            onPageError: (page, error) {
-              print('Erreur page $page: $error');
-            },
-            onViewCreated: (PDFViewController pdfViewController) {
-              // Contrôleur PDF disponible si besoin
-            },
-            onPageChanged: (int? page, int? total) {
-              setState(() {
-                _currentPage = page ?? 0;
-                _totalPages = total ?? 0;
-              });
-            },
-          ),
-        ),
       ],
     );
   }
