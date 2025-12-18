@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
 import 'pages/home/home_page.dart';
 import 'pages/profile/profile_page.dart';
 import 'pages/notifications/notifications_history_page.dart';
@@ -46,7 +47,7 @@ class _MainNavigationState extends State<MainNavigation> {
     {'page': const GenericPage(title: 'Analyse'), 'title': 'Analyse'},
     {'page': const HomePage(), 'title': 'Accueil'},
     {'page': const GenericPage(title: 'Conseils'), 'title': 'Conseils'},
-    {'page': const GenericPage(title: 'Paramètres'), 'title': 'Paramètres'}
+    {'page': const SettingsPage(), 'title': 'Paramètres'}
   ];
 
   void _onNavbarTap(int index) {
