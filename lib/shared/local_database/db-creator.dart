@@ -164,6 +164,21 @@ class DatabaseHelper {
     return createBadgesTable;
   }
 
+  String initHomeInventoryTable() {
+    return '''
+      CREATE TABLE home_inventory_equipments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        room_name TEXT NOT NULL,
+        average_consumption REAL NOT NULL,
+        average_cost REAL NOT NULL,
+        usage_time REAL NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''';
+  }
+
   Future _createDB(Database db, int version) async {
     await db.execute(initUserTable());
     await db.execute(initContentTable());
@@ -174,6 +189,7 @@ class DatabaseHelper {
     await db.execute(initRemindersTable());
     await db.execute(initBadgesTable());
     await db.execute(initEquipmentsTable());
+    await db.execute(initHomeInventoryTable());
 
     // Indexs pour améliorer les performances de recherche
     await db.execute('CREATE INDEX idx_user ON Users(username)');
