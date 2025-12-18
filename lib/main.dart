@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'database_test_page.dart';
+import 'pages/badges/badges_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
 import 'pages/home/home_page.dart';
 import 'pages/profile/profile_page.dart';
