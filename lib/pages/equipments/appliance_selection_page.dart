@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../common-widget/header/header_widget.dart';
 import 'components/appliance_card.dart';
 import 'models/appliance.dart';
 import 'models/room.dart';
 import 'services/equipment_service.dart';
+
 
 class ApplianceSelectionPage extends StatefulWidget {
   final Room room;
@@ -105,14 +107,18 @@ class _ApplianceSelectionPageState extends State<ApplianceSelectionPage> {
     final filteredAppliances = _getFilteredAppliances();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sélection d\'appareils'),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF264777),
-        foregroundColor: Colors.white,
-      ),
+      // Suppression de l'appBar originale et ajout du HeaderWidget
+      appBar: null,
       body: Column(
         children: [
+          // Ajout du HeaderWidget
+          HeaderWidget(
+            title: 'Sélection d\'appareils',
+            isHomePage: false,
+            navigationContext: context,
+          ),
+
+          // Le reste de votre code original reste exactement le même
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Container(
@@ -161,7 +167,7 @@ class _ApplianceSelectionPageState extends State<ApplianceSelectionPage> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: Color(0xFFFC0001)), // Exact FC0001
+                  const Icon(Icons.warning_amber_rounded, color: Color(0xFFFC0001)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -169,7 +175,7 @@ class _ApplianceSelectionPageState extends State<ApplianceSelectionPage> {
                       'Vous pourrez les personnaliser après ajout.',
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Color(0xFFFC0001), // Exact FC0001
+                        color: Color(0xFFFC0001),
                         fontWeight: FontWeight.w500,
                       ),
                     ),

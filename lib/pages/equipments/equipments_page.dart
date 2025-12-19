@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../common-widget/header/header_widget.dart';
 import 'components/summary_box.dart';
 import 'components/warning_banner.dart';
 import 'components/room_card.dart';
@@ -275,115 +276,134 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
         topEquipment.id == equipment.id);
   }
 
+  Widget _buildAddRoomButton() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 8),
+      child: Center(
+        child: IconButton(
+          onPressed: _addNewRoom,
+          icon: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Icon(
+              Icons.add,
+              size: 28,
+              color: Colors.white,
+            ),
+          ),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Inventaire des Équipements'),
-        centerTitle: true,
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: _rooms.isEmpty ? 5 : _rooms.length + 5,
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return SummaryBox(
-                monthlyConsumption: _stats.monthlyConsumption,
-                monthlyCost: _stats.monthlyCost,
-                equipmentCount: _stats.equipmentCount,
-              );
-            }
+      body: Column(
+        children: [
+          HeaderWidget(
+            title: 'Inventaire des Équipements',
+            isHomePage: false,
+            navigationContext: context,
+          ),
+          
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _rooms.isEmpty ? 5 : _rooms.length + 5,
+                itemBuilder: (context, index) {
+                  // Ajuster les indices pour le contenu fixe
+                  if (index == 0) {
+                    return SummaryBox(
+                      monthlyConsumption: _stats.monthlyConsumption,
+                      monthlyCost: _stats.monthlyCost,
+                      equipmentCount: _stats.equipmentCount,
+                    );
+                  }
 
-            if (index == 1) {
-              return const SizedBox(height: 16);
-            }
+                  if (index == 1) {
+                    return const SizedBox(height: 16);
+                  }
 
-            if (index == 2) {
-              return const WarningBanner();
-            }
+                  if (index == 2) {
+                    return const WarningBanner();
+                  }
 
-            if (index == 3) {
-              return const SizedBox(height: 24);
-            }
+                  if (index == 3) {
+                    return const SizedBox(height: 24);
+                  }
 
-            // Aucun room
-            if (_rooms.isEmpty && index == 4) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 60),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.home_work,
-                        size: 60,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'Aucune pièce n\'a été créée',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
+                  // Si pas de pièces, afficher message + bouton
+                  if (_rooms.isEmpty) {
+                    if (index == 4) {
+                      return Column(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 40),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.home_work,
+                                    size: 60,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Aucune pièce n\'a été créée',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          _buildAddRoomButton(),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }
 
-            final roomIndex = index - 4;
+                  // Index pour les pièces
+                  final roomIndex = index - 4;
 
-            // Bouton +
-            if (!_rooms.isEmpty && roomIndex == _rooms.length) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 24, bottom: 8),
-                child: Center(
-                  child: IconButton(
-                    onPressed: _addNewRoom,
-                    icon: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: const Icon(
-                        Icons.add,
-                        size: 28,
-                        color: Colors.white,
-                      ),
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ),
-              );
-            }
+                  // Bouton d'ajout de pièce à la fin
+                  if (roomIndex == _rooms.length) {
+                    return _buildAddRoomButton();
+                  }
 
-            if (_rooms.isEmpty) {
-              return const SizedBox.shrink();
-            }
+                  // Afficher la pièce
+                  final room = _rooms[roomIndex];
+                  final equipments = _equipmentsByRoom[room.name] ?? [];
 
-            final room = _rooms[roomIndex];
-            final equipments = _equipmentsByRoom[room.name] ?? [];
-
-            return RoomCard(
-              room: room,
-              equipments: equipments,
-              onEdit: () => _editRoomName(room),
-              onAddEquipment: () => _addEquipmentToRoom(room.name),
-              onDelete: () => _deleteRoom(room),
-              onEquipmentTap: (equipment) {
-                _showEquipmentDetails(context, equipment);
-              },
-              isTopConsumingEquipment: _isTopConsumingEquipment,
-            );
-          },
-        ),
+                  return RoomCard(
+                    room: room,
+                    equipments: equipments,
+                    onEdit: () => _editRoomName(room),
+                    onAddEquipment: () => _addEquipmentToRoom(room.name),
+                    onDelete: () => _deleteRoom(room),
+                    onEquipmentTap: (equipment) {
+                      _showEquipmentDetails(context, equipment);
+                    },
+                    isTopConsumingEquipment: _isTopConsumingEquipment,
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

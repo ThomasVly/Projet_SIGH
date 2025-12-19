@@ -1,139 +1,114 @@
 import 'package:flutter/material.dart';
+import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
 import 'database_test_page.dart';
+import 'pages/badges/badges_page.dart';
+import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
+import 'pages/home/home_page.dart';
+import 'pages/profile/profile_page.dart';
+import 'pages/notifications/notifications_history_page.dart';
+import 'common-widget/navbar/navbar_widget.dart';
+import 'common-widget/header/header_widget.dart';
 
-void main() {
+import 'shared/firebase/firebase_service.dart';
+
+void main() async {
+  await FirebaseService.initialize();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'SIGH',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MainNavigation(),
+      routes: {
+        '/profile': (context) => const ProfilePage(),
+        '/notifications': (context) => const NotificationsHistoryPage(),
+      },
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MainNavigation> createState() => _MainNavigationState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _MainNavigationState extends State<MainNavigation> {
+  int _currentIndex = 2; // Démarrer sur la page Accueil
 
-  void _incrementCounter() {
+  final List<Map<String, dynamic>> _pages = [
+    {'page': const GenericPage(title: 'Défis'), 'title': 'Défis'},
+    {'page': const EquipmentsPage(), 'title': 'Analyse'},
+    {'page': const HomePage(), 'title': 'Accueil'},
+    {'page': const GenericPage(title: 'Conseils'), 'title': 'Conseils'},
+    {'page': const SettingsPage(), 'title': 'Paramètres'}
+  ];
+
+  void _onNavbarTap(int index) {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _currentIndex = index;
     });
-  }
-
-  void _navigateToTestDB() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const DatabaseTestPage()),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+      body: _pages[_currentIndex]['page'] as Widget,
+      bottomNavigationBar: NavbarWidget(
+        currentIndex: _currentIndex,
+        onTap: _onNavbarTap,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+    );
+  }
+}
+
+class GenericPage extends StatelessWidget {
+  final String title;
+
+  const GenericPage({
+    super.key,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          children: [
+            HeaderWidget(
+              title: title,
+              isHomePage: false,
             ),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              onPressed: _navigateToTestDB,
-              icon: const Icon(Icons.storage),
-              label: const Text('Tester la Base de Données'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      // Contenu de la page
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
+
+
+
