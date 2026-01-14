@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:projet_sigh_grp1/common-widget/header/header_widget.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/help_page.dart';
+import 'package:projet_sigh_grp1/pages/settings/models/privacy_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/reminder_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/help_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/conditions_page.dart';
@@ -72,6 +73,14 @@ class SettingsPage extends StatelessWidget {
                           height: cardHeight,
                         ),
 
+                        SizedBox(height: spacing),
+                        SettingsCard(
+                          title: 'Confidentialité & Données',
+                          backgroundColor: Colors.white,
+                          onTap: () => _handlePrivacy(context),
+                          height: cardHeight,
+                        ),
+
                         SizedBox(height: constraints.maxHeight * 0.10),
                         Image.asset(
                           'assets/images/logo_sigh.webp',
@@ -115,6 +124,13 @@ class SettingsPage extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const HelpPage()),
+    );
+  }
+
+  void _handlePrivacy(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PrivacyPage()),
     );
   }
 }
