@@ -3,7 +3,6 @@ import '../models/user_profile.dart';
 import '../services/user_experience_service.dart';
 import '../services/level_badge_service.dart';
 import '../services/user_preferences_service.dart';
-import '../services/notification_service.dart';
 
 
 class UserProvider extends ChangeNotifier {
@@ -11,7 +10,6 @@ class UserProvider extends ChangeNotifier {
   final UserExperienceService _xpService = UserExperienceService();
   final LevelBadgeService _badgeService = LevelBadgeService();
   final UserPreferencesService _prefsService = UserPreferencesService();
-  final NotificationService _notificationService = NotificationService();
 
   // Callback pour afficher le badge débloqué
   Function(LevelBadge)? onBadgeUnlocked;
@@ -114,12 +112,10 @@ class UserProvider extends ChangeNotifier {
 
     // Vérifier niveau supérieur
     if (_userProfile!.currentLevel > oldLevel) {
-      await _notificationService.notifyLevelUp(_userProfile!.currentLevel);
 
       // Vérifier badge de niveau
       final newBadge = _badgeService.checkNewBadge(oldLevel, _userProfile!.currentLevel);
       if (newBadge != null) {
-        await _notificationService.notifyBadgeUnlocked(newBadge.title, newBadge.emoji);
         if (onBadgeUnlocked != null) {
           onBadgeUnlocked!(newBadge);
         }
@@ -137,12 +133,9 @@ class UserProvider extends ChangeNotifier {
 
     // Vérifier niveau supérieur
     if (_userProfile!.currentLevel > oldLevel) {
-      await _notificationService.notifyLevelUp(_userProfile!.currentLevel);
-      
       // Vérifier badge de niveau
       final newBadge = _badgeService.checkNewBadge(oldLevel, _userProfile!.currentLevel);
       if (newBadge != null) {
-        await _notificationService.notifyBadgeUnlocked(newBadge.title, newBadge.emoji);
         if (onBadgeUnlocked != null) {
           onBadgeUnlocked!(newBadge);
         }
