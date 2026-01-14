@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'models/content_model.dart';
 import 'services/content_service.dart';
-import 'fake_data/content_fake_data.dart';
 import 'content_detail_page.dart';
+import 'services/content_sync_service.dart';
 
 /// Page des conseils avec onglets Fiches infos et Tutoriels
 class ConseilsPage extends StatefulWidget {
@@ -15,6 +15,7 @@ class ConseilsPage extends StatefulWidget {
 class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ContentService _contentService = ContentService();
+  final ContentSyncService _contentSyncService = ContentSyncService();
   List<ContentModel> _fiches = [];
   List<ContentModel> _tutoriels = [];
   ContentModel? _featuredContent;
@@ -36,15 +37,48 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
     super.dispose();
   }
 
+  Future<void> _syncFromFirestoreAndReload() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final synced = await _contentSyncService.syncFromFirestore();
+
+      // Recharger depuis SQLite
+      final fiches = await _contentService.getContentsByType('fiche');
+      final tutoriels = await _contentService.getContentsByType('tutorial');
+      final featured = await _contentService.getFeaturedContent();
+      final tags = await _contentService.getAllTags();
+
+      setState(() {
+        _fiches = fiches;
+        _tutoriels = tutoriels;
+        _featuredContent = featured;
+        _availableTags = tags;
+        _isLoading = false;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sync Firestore terminée ($synced contenus).')),
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sync Firestore impossible: $e')),
+      );
+    }
+  }
+
   /// Charge les données depuis la base de données
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    
-    try {
-      // Remplir la base si vide
-      await ContentFakeData.populateDatabase();
 
-      // Charger les fiches et tutoriels
+    try {
+      // 1) Sync Firestore -> SQLite (source unique)
+      await _contentSyncService.syncFromFirestore();
+
+      // 2) Charger les fiches et tutoriels depuis SQLite
       final fiches = await _contentService.getContentsByType('fiche');
       final tutoriels = await _contentService.getContentsByType('tutorial');
       final featured = await _contentService.getFeaturedContent();
@@ -62,11 +96,8 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
       if (e.toString().contains('no such column')) {
         print('Colonnes manquantes détectées, réinitialisation de la base de données...');
 
-        // Réinitialiser la base de données via le service
         await _contentService.resetDatabase();
-
-        // Réessayer de charger les données
-        await ContentFakeData.populateDatabase();
+        await _contentSyncService.syncFromFirestore();
 
         final fiches = await _contentService.getContentsByType('fiche');
         final tutoriels = await _contentService.getContentsByType('tutorial');
@@ -81,10 +112,49 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
           _isLoading = false;
         });
       } else {
-        // Autre erreur
+        // Firestore indisponible ou autre: on affiche ce qui est déjà en cache SQLite
         print('Erreur lors du chargement des données: $e');
-        setState(() => _isLoading = false);
+
+        final fiches = await _contentService.getContentsByType('fiche');
+        final tutoriels = await _contentService.getContentsByType('tutorial');
+        final featured = await _contentService.getFeaturedContent();
+        final tags = await _contentService.getAllTags();
+
+        setState(() {
+          _fiches = fiches;
+          _tutoriels = tutoriels;
+          _featuredContent = featured;
+          _availableTags = tags;
+          _isLoading = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Firestore indisponible: $e')),
+          );
+        }
       }
+    }
+  }
+
+  Future<void> _resetDbAndReload() async {
+    setState(() => _isLoading = true);
+
+    try {
+      await _contentService.resetDatabase();
+      await _contentSyncService.syncFromFirestore();
+      await _loadData();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Base de données réinitialisée. Synchronisation Firestore effectuée.')),
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur reset DB: $e')),
+      );
     }
   }
 
@@ -119,7 +189,9 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
           : Column(
               children: [
                 // Header bleu foncé avec titre "Conseils" uniquement
-                _buildHeader(),
+                _buildHeader(
+                  onTempResetDbPressed: _resetDbAndReload,
+                ),
                 // Onglets Fiches infos / Tutoriels
                 _buildTabs(),
                 // Barre de recherche (sous les onglets)
@@ -140,7 +212,7 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
   }
 
   /// Construit le header bleu avec titre uniquement
-  Widget _buildHeader() {
+  Widget _buildHeader({VoidCallback? onTempResetDbPressed}) {
     return Container(
       color: const Color(0xFF003366),
       padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
@@ -155,9 +227,23 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
               fontWeight: FontWeight.bold,
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white, size: 28),
-            onPressed: () {},
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.search, color: Colors.white, size: 28),
+                onPressed: () {},
+              ),
+              // TEMP: force la sync Firestore -> SQLite
+              IconButton(
+                icon: const Icon(Icons.cloud_download, color: Colors.white, size: 28),
+                onPressed: _syncFromFirestoreAndReload,
+                tooltip: 'Sync Firestore',
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 28),
+                onPressed: onTempResetDbPressed,
+              ),
+            ],
           ),
         ],
       ),

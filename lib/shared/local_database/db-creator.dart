@@ -29,7 +29,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4, // Incrémentation de la version pour forcer la mise à jour
+      version: 6, // Incrémentation de la version pour forcer la mise à jour
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -65,6 +65,22 @@ class DatabaseHelper {
         print('Colonne pdfUrl déjà existante ou erreur: $e');
       }
     }
+
+    // Ajout du support de synchronisation Firestore -> SQLite
+    if (oldVersion < 6) {
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN remoteId TEXT');
+      } catch (e) {
+        print('Colonne remoteId déjà existante ou erreur: $e');
+      }
+
+      // Index unique pour éviter les doublons lors des upserts
+      try {
+        await db.execute('CREATE UNIQUE INDEX idx_content_remote_id ON Content(remoteId)');
+      } catch (e) {
+        print('Index idx_content_remote_id déjà existant ou erreur: $e');
+      }
+    }
   }
 
   /// Crée la table Users
@@ -87,6 +103,7 @@ class DatabaseHelper {
     var createContentTable  = ('''
       CREATE TABLE Content (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        remoteId TEXT,
         title TEXT NOT NULL,
         tags TEXT NOT NULL,
         hasBeenRead BOOLEAN NOT NULL DEFAULT 0,
@@ -233,6 +250,9 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_challenge ON Challenges(id)');
     await db.execute('CREATE INDEX idx_quiz ON Quizzes(name)');
     await db.execute('CREATE INDEX idx_content ON Content(title,tags,type)');
+
+    // Index unique pour support remoteId (Firestore)
+    await db.execute('CREATE UNIQUE INDEX idx_content_remote_id ON Content(remoteId)');
   }
 
   /// Ferme la base de données

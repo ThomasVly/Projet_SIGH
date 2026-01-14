@@ -50,7 +50,7 @@ class _MainNavigationState extends State<MainNavigation> {
     {'page': const GenericPage(title: 'Défis'), 'title': 'Défis'},
     {'page': const EquipmentsPage(), 'title': 'Analyse'},
     {'page': const HomePage(), 'title': 'Accueil'},
-    {'page': const GenericPage(title: 'Conseils'), 'title': 'Conseils'},
+    {'page': const ConseilsPage(), 'title': 'Conseils'},
     {'page': const SettingsPage(), 'title': 'Paramètres'}
   ];
 
