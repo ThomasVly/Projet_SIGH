@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
+import 'database_test_page.dart';
+import 'pages/badges/badges_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
 import 'pages/home/home_page.dart';
 import 'pages/conseils/conseils_page.dart';
@@ -45,7 +48,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Map<String, dynamic>> _pages = [
     {'page': const GenericPage(title: 'Défis'), 'title': 'Défis'},
-    {'page': const GenericPage(title: 'Analyse'), 'title': 'Analyse'},
+    {'page': const EquipmentsPage(), 'title': 'Analyse'},
     {'page': const HomePage(), 'title': 'Accueil'},
     {'page': const GenericPage(title: 'Conseils'), 'title': 'Conseils'},
     {'page': const SettingsPage(), 'title': 'Paramètres'}
