@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../shared/local_database/db-creator.dart';
+import '../../common-widget/header/header_widget.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   Future<void> _resetDatabase(BuildContext context) async {
@@ -58,37 +59,65 @@ class HomePage extends StatelessWidget {
   }
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late ScrollController _scrollController;
+  bool _isCollapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    bool isCollapsed = _scrollController.offset > 20;
+    if (isCollapsed != _isCollapsed) {
+      setState(() {
+        _isCollapsed = isCollapsed;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Page d\'accueil',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          SliverToBoxAdapter(
+            child: HeaderWidget(
+              userName: 'Clara',
+              isHomePage: true,
+              isCollapsed: _isCollapsed,
+              navigationContext: context,
             ),
-            const SizedBox(height: 40),
-            // BOUTON TEMPORAIRE - À RETIRER EN PRODUCTION
-            ElevatedButton.icon(
-              onPressed: () => _resetDatabase(context),
-              icon: const Icon(Icons.delete_forever, color: Colors.white),
-              label: const Text('TEMP: Reset Database'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          SliverToBoxAdapter(
+            child: const SizedBox(height: 16),
+          ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  // Ajouter vos widgets ici
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              '⚠️ Bouton temporaire de test',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

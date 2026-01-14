@@ -43,7 +43,7 @@ class NavbarWidget extends StatelessWidget {
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.extension),
-                label: 'Quizz',
+                label: 'Défis',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.trending_up),

@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
 import 'database_test_page.dart';
+import 'pages/badges/badges_page.dart';
+import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
 import 'pages/home/home_page.dart';
 import 'pages/conseils/conseils_page.dart';
+import 'pages/profile/profile_page.dart';
+import 'pages/notifications/notifications_history_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
+import 'common-widget/header/header_widget.dart';
 
-void main() {
+import 'shared/firebase/firebase_service.dart';
+
+void main() async {
+  await FirebaseService.initialize();
   runApp(const MyApp());
 }
 
@@ -19,6 +28,10 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: const MainNavigation(),
+      routes: {
+        '/profile': (context) => const ProfilePage(),
+        '/notifications': (context) => const NotificationsHistoryPage(),
+      },
     );
   }
 }
@@ -31,14 +44,14 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 0;
+  int _currentIndex = 2; // Démarrer sur la page Accueil
 
-  final List<Widget> _pages = [
-    const Scaffold(backgroundColor: Colors.white, body: Center(child: Text('Quizz'))), // Index 0
-    const Scaffold(backgroundColor: Colors.white, body: Center(child: Text('Analyse'))), // Index 1
-    const HomePage(), // Index 2 - Accueil
-    const ConseilsPage(), // Index 3 - Conseils
-    const Scaffold(backgroundColor: Colors.white, body: Center(child: Text('Paramètres'))), // Index 4
+  final List<Map<String, dynamic>> _pages = [
+    {'page': const GenericPage(title: 'Défis'), 'title': 'Défis'},
+    {'page': const EquipmentsPage(), 'title': 'Analyse'},
+    {'page': const HomePage(), 'title': 'Accueil'},
+    {'page': const GenericPage(title: 'Conseils'), 'title': 'Conseils'},
+    {'page': const SettingsPage(), 'title': 'Paramètres'}
   ];
 
   void _onNavbarTap(int index) {
@@ -50,7 +63,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: _pages[_currentIndex]['page'] as Widget,
       bottomNavigationBar: NavbarWidget(
         currentIndex: _currentIndex,
         onTap: _onNavbarTap,
@@ -58,3 +71,45 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 }
+
+class GenericPage extends StatelessWidget {
+  final String title;
+
+  const GenericPage({
+    super.key,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            HeaderWidget(
+              title: title,
+              isHomePage: false,
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      // Contenu de la page
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
