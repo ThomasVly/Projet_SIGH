@@ -4,6 +4,7 @@ import 'database_test_page.dart';
 import 'pages/badges/badges_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
 import 'pages/home/home_page.dart';
+import 'pages/conseils/conseils_page.dart';
 import 'pages/profile/profile_page.dart';
 import 'pages/notifications/notifications_history_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
