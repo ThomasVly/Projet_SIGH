@@ -43,4 +43,36 @@ class FirestoreService {
       rethrow;
     }
   }
+
+  //  SECTION CHALLENGES (DÉFIS)
+ static final CollectionReference _challengesCollection =
+      _firestore.collection('challenges');
+
+  /// Récupère les défis de la collection "challenges"
+  ///
+  /// Retour : List<Map> avec au minimum :
+  ///  - id (String)
+  ///  - title (String)
+  ///  - description (String)
+  ///  - reminder (String)
+  ///  - reward (int)
+  ///  - month (String "YYYY-MM")
+  static Future<List<Map<String, dynamic>>> getChallenges() async {
+    try {
+      final querySnapshot = await _challengesCollection
+          .orderBy('month', descending: true) // du plus récent au plus ancien
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => {
+                'id': doc.id,
+                ...doc.data() as Map<String, dynamic>,
+              })
+          .toList();
+    } catch (e) {
+      print('❌ Error fetching challenges: $e');
+      rethrow;
+    }
+  }
 }
+
