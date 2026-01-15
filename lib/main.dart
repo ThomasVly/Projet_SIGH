@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
 import 'database_test_page.dart';
-import 'services/background_service.dart';
+import 'pages/badges/badges_page.dart';
+import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
+import 'pages/home/home_page.dart';
+import 'pages/conseils/conseils_page.dart';
+import 'pages/profile/profile_page.dart';
+import 'pages/notifications/notifications_history_page.dart';
+import 'common-widget/navbar/navbar_widget.dart';
+import 'common-widget/header/header_widget.dart';
+
+import 'shared/firebase/firebase_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  try {
-    // Initialisation du service de background pour les notifications météo
-    await BackgroundService().initialize();
-  } catch (e) {
-    print(
-      'Erreur init background service (normal sur Web non configuré pour mobile): $e',
-    );
-  }
+  await FirebaseService.initialize();
   runApp(const MyApp());
 }
 
@@ -21,57 +23,84 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Projet SIGH',
+      title: 'SIGH',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF003366)),
-        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Accueil SIGH'),
+      home: const MainNavigation(),
+      routes: {
+        '/profile': (context) => const ProfilePage(),
+        '/notifications': (context) => const NotificationsHistoryPage(),
+      },
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MainNavigation> createState() => _MainNavigationState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  void _navigateToTestDB() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const DatabaseTestPage()),
-    );
+class _MainNavigationState extends State<MainNavigation> {
+  int _currentIndex = 2; // Démarrer sur la page Accueil
+
+  final List<Map<String, dynamic>> _pages = [
+    {'page': const GenericPage(title: 'Défis'), 'title': 'Défis'},
+    {'page': const EquipmentsPage(), 'title': 'Analyse'},
+    {'page': const HomePage(), 'title': 'Accueil'},
+    {'page': const GenericPage(title: 'Conseils'), 'title': 'Conseils'},
+    {'page': const SettingsPage(), 'title': 'Paramètres'}
+  ];
+
+  void _onNavbarTap(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+      body: _pages[_currentIndex]['page'] as Widget,
+      bottomNavigationBar: NavbarWidget(
+        currentIndex: _currentIndex,
+        onTap: _onNavbarTap,
       ),
-      body: Center(
+    );
+  }
+}
+
+class GenericPage extends StatelessWidget {
+  final String title;
+
+  const GenericPage({
+    super.key,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Bienvenue sur l\'application SIGH',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          children: [
+            HeaderWidget(
+              title: title,
+              isHomePage: false,
             ),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              onPressed: _navigateToTestDB,
-              icon: const Icon(Icons.storage),
-              label: const Text('Accéder aux Tests Base de Données'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      // Contenu de la page
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -81,3 +110,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
+
+

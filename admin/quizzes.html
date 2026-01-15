@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Gestion des Quiz | SIGH</title>
+    <meta name="description" content="Interface d'administration pour la gestion des quiz SIGH">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-content">
+                <a href="index.html" class="back-link">← Retour</a>
+                <div class="logo">
+                    <span class="logo-icon">❓</span>
+                    <h1>SIGH Admin</h1>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Add Quiz Form -->
+            <section class="card form-section">
+                <div class="card-header">
+                    <h2>✨ Ajouter un nouveau quiz</h2>
+                </div>
+                <form id="quizForm" class="conseil-form">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label for="theme">Thème du quiz</label>
+                            <input type="text" id="theme" name="theme" required
+                                placeholder="Ex: Environnement, Santé, Énergie...">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="themeColor">Couleur du thème</label>
+                            <div class="color-picker-wrapper">
+                                <input type="color" id="themeColor" name="themeColor" value="#1e3a5f">
+                                <span class="color-hex" id="colorHex">#1e3a5f</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Questions Container -->
+                    <div class="questions-section">
+                        <label>Questions</label>
+                        <div id="questionsContainer"></div>
+                        <button type="button" class="btn btn-secondary" id="addQuestionBtn"
+                            style="margin-top: 0.75rem;">
+                            ➕ Ajouter une question
+                        </button>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="submitBtn" style="margin-top: 1.5rem;">
+                        <span class="btn-text">Ajouter le quiz</span>
+                        <span class="btn-loader" style="display: none;">⏳</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Quizzes List -->
+            <section class="card list-section">
+                <div class="card-header">
+                    <h2>📝 Liste des quiz</h2>
+                    <button class="btn btn-secondary" id="refreshBtn">🔄 Actualiser</button>
+                </div>
+                <div id="quizzesList" class="conseils-list">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Chargement des quiz...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Toast Notifications -->
+        <div id="toast" class="toast"></div>
+    </div>
+
+    <!-- Firebase SDK (compat version for no-server usage) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="quizzes.js"></script>
+</body>
+
+</html>
