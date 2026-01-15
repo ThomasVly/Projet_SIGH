@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'models/reminder.dart';
+import 'services/weather_service.dart';
+import '../../services/background_service.dart';
 
 // Couleurs du thème
 const Color kPrimaryDark = Color(0xFF003366);
@@ -46,6 +48,8 @@ class _RappelPageState extends State<RappelPage> {
   String? _heatingType; // 'collectif' ou 'individuel'
   String? _heatingEnergy; // 'gaz' ou 'electrique'
 
+  final WeatherService _weatherService = WeatherService();
+
   // États pour les heures creuses
   bool? _hasOffPeakHours; // null = pas encore répondu, true = oui, false = non
   List<Map<String, TimeOfDay>> _offPeakSlots = []; // Liste des plages horaires
@@ -60,6 +64,10 @@ class _RappelPageState extends State<RappelPage> {
     7,
   ]; // 1=Lun, 7=Dim - jours actifs pour quotidien
   int _offPeakWeekday = 1; // Jour de la semaine pour hebdomadaire (1=Lun)
+
+  // Options notifications météo
+  bool _notifyMorning = true;
+  bool _notifyEvening = true;
 
   final List<_SuggestedAction> _suggestions = [
     _SuggestedAction(
@@ -135,6 +143,8 @@ class _RappelPageState extends State<RappelPage> {
       // Météo & Localisation
       _weatherLocationEnabled =
           prefs.getBool('weather_location_enabled') ?? false;
+      _notifyMorning = prefs.getBool('weather_notify_morning') ?? true;
+      _notifyEvening = prefs.getBool('weather_notify_evening') ?? true;
 
       // Alerte consommation
       _consumptionAlertEnabled =
@@ -226,6 +236,8 @@ class _RappelPageState extends State<RappelPage> {
 
     // Météo & Localisation
     await prefs.setBool('weather_location_enabled', _weatherLocationEnabled);
+    await prefs.setBool('weather_notify_morning', _notifyMorning);
+    await prefs.setBool('weather_notify_evening', _notifyEvening);
 
     // Alerte consommation
     await prefs.setBool('consumption_alert_enabled', _consumptionAlertEnabled);
@@ -343,25 +355,66 @@ class _RappelPageState extends State<RappelPage> {
   }
 
   /// Créer ou supprimer le rappel météo selon l'état du switch
-  void _updateWeatherReminder() {
+  Future<void> _updateWeatherReminder() async {
     // Supprimer l'ancien rappel météo s'il existe
-    _reminders.removeWhere((r) => r.type == ReminderType.weatherLocation);
+    setState(() {
+      _reminders.removeWhere((r) => r.type == ReminderType.weatherLocation);
+    });
 
     if (_weatherLocationEnabled) {
-      _reminders.add(
-        Reminder(
-          id: _nextId++,
-          title: 'Conseils météo',
-          description:
-              'Recevez des conseils personnalisés basés sur la météo de votre localisation',
-          type: ReminderType.weatherLocation,
-          frequency: ReminderFrequency.daily,
-          isActive: true,
-        ),
-      );
-    }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Récupération de la météo et analyse...'),
+          ),
+        );
+      }
 
-    setState(() {});
+      try {
+        // Enregistrer la tâche de fond
+        await BackgroundService().registerPeriodicTask();
+
+        final newReminders = await _weatherService.generateWeatherReminders(
+          _nextId,
+        );
+
+        setState(() {
+          _reminders.addAll(newReminders);
+          _nextId += newReminders.length;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          if (newReminders.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${newReminders.length} conseil(s) météo ajouté(s)',
+                ),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Météo récupérée. Aucun conseil spécifique nécessaire.',
+                ),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur météo: ${e.toString()}')),
+          );
+        }
+      }
+    } else {
+      // Désactiver la tâche de fond si on désactive la météo
+      await BackgroundService().cancelAllTasks();
+    }
   }
 
   /// Créer ou supprimer le rappel de consommation anormale
@@ -788,6 +841,7 @@ class _RappelPageState extends State<RappelPage> {
                             fontWeight: FontWeight.w600,
                             color: colorScheme.onSurface,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -798,6 +852,8 @@ class _RappelPageState extends State<RappelPage> {
                                 ? colorScheme.primary
                                 : colorScheme.onSurfaceVariant,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -1445,26 +1501,111 @@ class _RappelPageState extends State<RappelPage> {
               ],
             ),
           ),
-          // Message quand activé
+          // Message et options quand activé
           if (_weatherLocationEnabled) ...[
             const Divider(height: 1),
             Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.check_circle,
-                    size: 16,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Vous recevrez des rappels et conseils liés à votre météo locale',
-                      style: TextStyle(
-                        fontSize: 12,
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        size: 16,
                         color: colorScheme.primary,
                       ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Vous recevrez des conseils liés à votre météo locale',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Préférences de notification :',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  CheckboxListTile(
+                    title: const Text('Matin (08h)'),
+                    subtitle: const Text('Pour bien démarrer la journée'),
+                    value: _notifyMorning,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: colorScheme.primary,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    onChanged: (bool? value) {
+                      if (value != null) {
+                        setState(() => _notifyMorning = value);
+                        _savePreferences();
+                      }
+                    },
+                  ),
+                  CheckboxListTile(
+                    title: const Text('Soir (19h)'),
+                    subtitle: const Text('Pour anticiper la nuit'),
+                    value: _notifyEvening,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: colorScheme.primary,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    onChanged: (bool? value) {
+                      if (value != null) {
+                        setState(() => _notifyEvening = value);
+                        _savePreferences();
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.notifications_active, size: 16),
+                      label: const Text('Tester une notification maintenant'),
+                      style: TextButton.styleFrom(
+                        backgroundColor: colorScheme.surfaceContainerHighest,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Génération de notification test...'),
+                          ),
+                        );
+                        // Simulation de la génération
+                        final reminders = await _weatherService
+                            .generateWeatherReminders(999);
+                        if (reminders.isNotEmpty) {
+                          // Envoi immédiat via le service background
+                          await BackgroundService().sendNotification(
+                            reminders.first,
+                          );
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Notification envoyée: ${reminders.first.title}',
+                                ),
+                              ),
+                            );
+                          }
+                        } else {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Aucune alerte météo générée.'),
+                              ),
+                            );
+                          }
+                        }
+                      },
                     ),
                   ),
                 ],
