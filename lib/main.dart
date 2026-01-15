@@ -8,6 +8,8 @@ import 'pages/profile/profile_page.dart';
 import 'pages/notifications/notifications_history_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
 import 'common-widget/header/header_widget.dart';
+import 'package:projet_sigh_grp1/pages/defis/defis_page.dart';
+
 
 import 'shared/firebase/firebase_service.dart';
 
@@ -46,7 +48,7 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 2; // Démarrer sur la page Accueil
 
   final List<Map<String, dynamic>> _pages = [
-    {'page': const GenericPage(title: 'Défis'), 'title': 'Défis'},
+    {'page': const DefisPage(), 'title': 'Défis'},
     {'page': const EquipmentsPage(), 'title': 'Analyse'},
     {'page': const HomePage(), 'title': 'Accueil'},
     {'page': const GenericPage(title: 'Conseils'), 'title': 'Conseils'},
