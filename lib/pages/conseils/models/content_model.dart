@@ -4,6 +4,7 @@ class ContentModel {
   final String? remoteId;
   final String title;
   final String tags;
+  final String description;
   final bool hasBeenRead;
   final int notation;
   final bool isFavorite;
@@ -18,6 +19,7 @@ class ContentModel {
     this.remoteId,
     required this.title,
     required this.tags,
+    this.description = '',
     this.hasBeenRead = false,
     this.notation = 0,
     this.isFavorite = false,
@@ -35,6 +37,7 @@ class ContentModel {
       'remoteId': remoteId,
       'title': title,
       'tags': tags,
+      'description': description,
       'hasBeenRead': hasBeenRead ? 1 : 0,
       'notation': notation,
       'isFavorite': isFavorite ? 1 : 0,
@@ -53,6 +56,7 @@ class ContentModel {
       remoteId: map['remoteId'] as String?,
       title: map['title'] as String,
       tags: map['tags'] as String,
+      description: (map['description'] as String?) ?? '',
       hasBeenRead: map['hasBeenRead'] == 1,
       notation: map['notation'] as int,
       isFavorite: map['isFavorite'] == 1,
@@ -97,6 +101,7 @@ class ContentModel {
     String? remoteId,
     String? title,
     String? tags,
+    String? description,
     bool? hasBeenRead,
     int? notation,
     bool? isFavorite,
@@ -111,6 +116,7 @@ class ContentModel {
       remoteId: remoteId ?? this.remoteId,
       title: title ?? this.title,
       tags: tags ?? this.tags,
+      description: description ?? this.description,
       hasBeenRead: hasBeenRead ?? this.hasBeenRead,
       notation: notation ?? this.notation,
       isFavorite: isFavorite ?? this.isFavorite,

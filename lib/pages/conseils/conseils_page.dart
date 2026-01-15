@@ -4,6 +4,12 @@ import 'services/content_service.dart';
 import 'content_detail_page.dart';
 import 'services/content_sync_service.dart';
 
+/// TODO: Fix le bug qui clear l'article à la une quand on change d'onglet puis revient.
+/// TODO: Séparer l'article à la une du tuto à la une (actuellement c'est le même pour les deux onglets).
+/// TODO: Séparer les filtres des articles des filtres des tutoriels (actuellement c'est le même pour les deux onglets).
+/// TODO: Changer l'affichage rose gris bizarre des cadres.
+///
+
 /// Page des conseils avec onglets Fiches infos et Tutoriels
 class ConseilsPage extends StatefulWidget {
   const ConseilsPage({super.key});
@@ -376,7 +382,7 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
           });
         },
         backgroundColor: Colors.white,
-        selectedColor: const Color(0xFF003366).withOpacity(0.15),
+        selectedColor: const Color(0xFF003366).withValues(alpha: 0.15),
         labelStyle: TextStyle(
           color: isSelected ? const Color(0xFF003366) : Colors.grey[700],
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -415,7 +421,7 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF003366).withOpacity(0.3),
+            color: const Color(0xFF003366).withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -469,7 +475,7 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
                 Text(
                   'Découvrez les actions concrètes à mettre en place dès aujourd\'hui pour réduire significativement votre consommation d\'énergie.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 14,
                     height: 1.4,
                   ),
@@ -517,7 +523,7 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF003366).withOpacity(0.1),
+                  color: const Color(0xFF003366).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -611,19 +617,5 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
       // Recharger les données après le retour pour mettre à jour les statuts (lu/favori)
       _loadData();
     });
-  }
-
-  /// Toggle le favori
-  Future<void> _toggleFavorite(ContentModel content) async {
-    await _contentService.toggleFavorite(content.id!, !content.isFavorite);
-    _loadData();
-  }
-
-  /// Marque comme lu
-  Future<void> _markAsRead(ContentModel content) async {
-    if (!content.hasBeenRead) {
-      await _contentService.markAsRead(content.id!);
-      _loadData();
-    }
   }
 }

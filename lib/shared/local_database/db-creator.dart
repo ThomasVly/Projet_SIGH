@@ -29,7 +29,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 6, // Incrémentation de la version pour forcer la mise à jour
+      version: 7, // Incrémentation (ajout colonne description)
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
@@ -81,6 +81,15 @@ class DatabaseHelper {
         print('Index idx_content_remote_id déjà existant ou erreur: $e');
       }
     }
+
+    // Ajout d'une description (Firestore -> SQLite)
+    if (oldVersion < 7) {
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN description TEXT NOT NULL DEFAULT ""');
+      } catch (e) {
+        print('Colonne description déjà existante ou erreur: $e');
+      }
+    }
   }
 
   /// Crée la table Users
@@ -106,6 +115,7 @@ class DatabaseHelper {
         remoteId TEXT,
         title TEXT NOT NULL,
         tags TEXT NOT NULL,
+        description TEXT NOT NULL,
         hasBeenRead BOOLEAN NOT NULL DEFAULT 0,
         notation INTEGER NOT NULL,
         isFavorite BOOLEAN NOT NULL DEFAULT 0,

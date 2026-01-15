@@ -244,4 +244,49 @@ class ContentService {
       whereArgs: [updated.id],
     );
   }
+
+  /// Définit explicitement le favori (true/false)
+  Future<int> setFavorite(int id, bool isFavorite) async {
+    return toggleFavorite(id, isFavorite);
+  }
+
+  /// Met à jour le temps de lecture (en minutes)
+  Future<int> updateReadingTime(int id, int readingTime) async {
+    final db = await _dbHelper.database;
+    return await db.update(
+      'Content',
+      {'readingTime': readingTime},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Inverse l'état favori en base pour un contenu.
+  ///
+  /// Retourne la nouvelle valeur (true si favori après l'opération).
+  ///
+  /// Note: on lit l'état actuel en DB (source de vérité) pour éviter les désync UI.
+  Future<bool> toggleFavoriteById(int id) async {
+    final db = await _dbHelper.database;
+
+    final rows = await db.query(
+      'Content',
+      columns: ['isFavorite'],
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    final current = rows.isNotEmpty && (rows.first['isFavorite'] ?? 0) == 1;
+    final next = !current;
+
+    await db.update(
+      'Content',
+      {'isFavorite': next ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    return next;
+  }
 }

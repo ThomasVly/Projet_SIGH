@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart' show rootBundle;
 import 'models/content_model.dart';
 import 'services/content_service.dart';
+import 'content_webview_page.dart';
+import 'content_youtube_page.dart';
 
 /// Page de détail d'un contenu (article, fiche, tutoriel)
 class ContentDetailPage extends StatefulWidget {
@@ -27,15 +29,79 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
   String? _errorMessage;
   int _currentPage = 0;
   int _totalPages = 0;
+  late final _ContentLinkKind _linkKind;
+  late ContentModel _content;
 
   @override
   void initState() {
     super.initState();
+
+    _content = widget.content;
+
     // Marquer comme lu automatiquement à l'ouverture
-    if (!widget.content.hasBeenRead) {
-      _contentService.markAsRead(widget.content.id!);
+    if (!_content.hasBeenRead) {
+      _contentService.markAsRead(_content.id!);
+      _content = _content.copyWith(hasBeenRead: true);
     }
-    _loadPdf();
+
+    _linkKind = _detectLinkKind(_content.pdfUrl);
+
+    // Si ce n'est pas un PDF, on bascule vers une page Web (ou YouTube).
+    // On le fait après le premier frame pour ne pas pousser une route pendant build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_linkKind == _ContentLinkKind.web) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => ContentWebViewPage(
+              title: widget.content.title,
+              url: widget.content.pdfUrl,
+              contentId: widget.content.id,
+              initialIsFavorite: widget.content.isFavorite,
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (_linkKind == _ContentLinkKind.youtube) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => ContentYoutubePage(
+              content: widget.content,
+            ),
+          ),
+        );
+        return;
+      }
+
+      // PDF
+      _loadPdf();
+    });
+  }
+
+  _ContentLinkKind _detectLinkKind(String url) {
+    final u = url.trim();
+    if (u.isEmpty) return _ContentLinkKind.unknown;
+
+    final lower = u.toLowerCase();
+
+    // Assets (ex: assets/files/PDF_example.pdf)
+    if (!lower.startsWith('http://') && !lower.startsWith('https://')) {
+      return _ContentLinkKind.pdf;
+    }
+
+    // YouTube
+    if (lower.contains('youtube.com') || lower.contains('youtu.be')) {
+      return _ContentLinkKind.youtube;
+    }
+
+    // PDF distant
+    if (lower.contains('.pdf')) {
+      return _ContentLinkKind.pdf;
+    }
+
+    // Sinon, web
+    return _ContentLinkKind.web;
   }
 
   /// Charge le PDF (depuis les assets ou depuis une URL)
@@ -56,6 +122,16 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
         return;
       }
 
+      // Garde-fou: si jamais on arrive ici avec un lien non-PDF, on n'essaye pas de le charger en PDF.
+      final kind = _detectLinkKind(pdfUrl);
+      if (kind != _ContentLinkKind.pdf) {
+        setState(() {
+          _errorMessage = 'Ce contenu n\'est pas un PDF.';
+          _isLoading = false;
+        });
+        return;
+      }
+
       // Si c'est une URL distante, télécharger le PDF
       if (pdfUrl.startsWith('http://') || pdfUrl.startsWith('https://')) {
         final response = await http.get(Uri.parse(pdfUrl));
@@ -70,7 +146,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
             _isLoading = false;
           });
         } else {
-          throw Exception('Erreur de téléchargement du PDF');
+          throw Exception('Erreur de téléchargement du PDF (status ${response.statusCode})');
         }
       }
       // Si c'est un asset local Flutter
@@ -106,7 +182,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          widget.content.category,
+          _content.category,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -116,10 +192,10 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
         actions: [
           IconButton(
             icon: Icon(
-              widget.content.isFavorite ? Icons.favorite : Icons.favorite_border,
+              _content.isFavorite ? Icons.favorite : Icons.favorite_border,
               color: Colors.white,
             ),
-            onPressed: () => _toggleFavorite(),
+            onPressed: _toggleFavorite,
           ),
         ],
       ),
@@ -148,7 +224,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
         children: [
           // Titre
           Text(
-            widget.content.title,
+            _content.title,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 24,
@@ -164,26 +240,26 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
               const Icon(Icons.access_time, color: Colors.white70, size: 16),
               const SizedBox(width: 6),
               Text(
-                '${widget.content.readingTime} min de lecture',
+                '${_content.readingTime} min de lecture',
                 style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
               const SizedBox(width: 20),
               const Icon(Icons.eco, color: Colors.white70, size: 16),
               const SizedBox(width: 6),
               Text(
-                'Économie ~${widget.content.notation * 2}%',
+                'Économie ~${_content.notation * 2}%',
                 style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ],
           ),
 
           // Tags
-          if (widget.content.tags.isNotEmpty) ...[
+          if (_content.tags.isNotEmpty) ...[
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: widget.content.getTagsList().map((tag) {
+              children: _content.getTagsList().map((tag) {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
@@ -351,12 +427,16 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
 
   /// Toggle le favori
   Future<void> _toggleFavorite() async {
-    await _contentService.toggleFavorite(
-      widget.content.id!,
-      !widget.content.isFavorite,
-    );
+    final id = _content.id;
+    if (id == null) return;
+
+    final next = await _contentService.toggleFavoriteById(id);
+
+    if (!mounted) return;
     setState(() {
-      // Mise à jour locale pour éviter de recharger
+      _content = _content.copyWith(isFavorite: next);
     });
   }
 }
+
+enum _ContentLinkKind { pdf, web, youtube, unknown }

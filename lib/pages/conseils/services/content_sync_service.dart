@@ -1,6 +1,7 @@
 import '../../../shared/firebase/firestore_service.dart';
 import '../models/content_model.dart';
 import 'content_service.dart';
+import '../../../shared/services/youtube_duration_service.dart';
 
 /// Synchronise les contenus depuis Firestore vers la base locale SQLite.
 ///
@@ -17,6 +18,8 @@ class ContentSyncService {
   ContentSyncService({ContentService? contentService})
       : _contentService = contentService ?? ContentService();
 
+  static const String _youtubeApiKey = String.fromEnvironment('YOUTUBE_API_KEY');
+
   /// Récupère Firestore, mappe vers ContentModel, puis upsert en base locale.
   ///
   /// Retourne le nombre de contenus traités.
@@ -26,7 +29,7 @@ class ContentSyncService {
 
     int count = 0;
     for (final doc in remoteDocs) {
-      final content = _mapFirestoreDocToContent(doc);
+      final content = await _mapFirestoreDocToContent(doc);
       if (content == null) continue;
 
       await _contentService.upsertByRemoteId(content);
@@ -50,12 +53,10 @@ class ContentSyncService {
   ///
   /// Le reste est complété localement (SQLite):
   /// - category, readingTime, isFeatured, pdfUrl, hasBeenRead, isFavorite, notation
-  ContentModel? _mapFirestoreDocToContent(Map<String, dynamic> doc) {
+  Future<ContentModel?> _mapFirestoreDocToContent(Map<String, dynamic> doc) async {
     final remoteId = doc['id']?.toString();
     final title = doc['title']?.toString().trim();
 
-    // Dans ton schéma Firestore, `type` existe bien.
-    // On normalise juste pour coller aux valeurs attendues côté app.
     final type = _normalizeType(doc['type']?.toString());
 
     // `detail` contient le lien. On le stocke dans pdfUrl pour l'affichage.
@@ -66,15 +67,27 @@ class ContentSyncService {
     if (type == null || type.isEmpty) return null;
     if (detail == null || detail.isEmpty) return null;
 
-    // tags: dans Firestore tu as une liste, on la stocke en CSV côté SQLite.
+    // description: on la stocke en local pour alimenter les pages de détail.
+    final description = doc['description']?.toString().trim() ?? '';
+
+    // tags: dans Firestore on a une liste, on la stocke en CSV côté SQLite.
     final tags = _normalizeTags(doc['tags']);
 
     // category: on la déduit de description si possible, sinon fallback.
-    final description = doc['description']?.toString().trim();
     final category = _deriveCategory(description, tags, title);
 
-    // readingTime: pas présent dans Firestore -> heuristique simple.
-    final readingTime = _estimateReadingTimeMinutes(description);
+    // readingTime: pas présent dans Firestore -> heuristique ou durée YouTube si possible.
+    var readingTime = _estimateReadingTimeMinutes(description);
+
+    // Si c'est un lien YouTube, on tente de récupérer la durée (fiable) via YouTube Data v3.
+    final videoId = _tryExtractYoutubeVideoId(detail);
+    if (videoId != null) {
+      final durationService = YoutubeDurationService(apiKey: _youtubeApiKey);
+      final seconds = await durationService.fetchDurationSeconds(videoId);
+      if (seconds != null && seconds > 0) {
+        readingTime = (seconds / 60).ceil().clamp(1, 240);
+      }
+    }
 
     // isFeatured: pas présent dans Firestore -> on peut le déduire si tag "Urgent" / "A la une".
     final isFeatured = _deriveIsFeatured(tags, title);
@@ -93,6 +106,7 @@ class ContentSyncService {
       remoteId: remoteId,
       title: title,
       tags: tags,
+      description: description,
       type: type,
       category: category,
       readingTime: readingTime,
@@ -120,6 +134,7 @@ class ContentSyncService {
     return null;
   }
 
+  ///TODO: Améliorer en fonction des besoins réels.
   String _deriveCategory(String? description, String tagsCsv, String title) {
     final source = '${description ?? ''},$tagsCsv,$title'.toLowerCase();
 
@@ -134,8 +149,6 @@ class ContentSyncService {
   }
 
   int _estimateReadingTimeMinutes(String? description) {
-    // Heuristique simple: on n'a pas le nombre de pages.
-    // On se base sur la longueur de description si présente.
     final text = (description ?? '').trim();
     if (text.isEmpty) return 5;
 
@@ -168,6 +181,40 @@ class ContentSyncService {
     final s = raw.toString().toLowerCase().trim();
     if (s == 'true' || s == '1') return true;
     if (s == 'false' || s == '0') return false;
+    return null;
+  }
+
+  String? _tryExtractYoutubeVideoId(String url) {
+    final u = url.trim();
+    if (u.isEmpty) return null;
+
+    final uri = Uri.tryParse(u);
+    if (uri == null) return null;
+
+    final host = uri.host.toLowerCase();
+
+    // youtu.be/<id>
+    if (host == 'youtu.be') {
+      final seg = uri.pathSegments;
+      if (seg.isEmpty) return null;
+      final id = seg.first.trim();
+      return id.isEmpty ? null : id;
+    }
+
+    // youtube.com/watch?v=<id>
+    if (host.contains('youtube.com')) {
+      final v = uri.queryParameters['v']?.trim();
+      if (v != null && v.isNotEmpty) return v;
+
+      // youtube.com/embed/<id>
+      final seg = uri.pathSegments;
+      final embedIndex = seg.indexOf('embed');
+      if (embedIndex != -1 && embedIndex + 1 < seg.length) {
+        final id = seg[embedIndex + 1].trim();
+        return id.isEmpty ? null : id;
+      }
+    }
+
     return null;
   }
 }
