@@ -35,6 +35,11 @@ dependencies:
   flutter_dotenv: ^6.0.0
   http: ^0.13.6
   cupertino_icons: ^1.0.8
+  geolocator: ^13.0.2
+  geolocator_web: ^4.1.1
+  shared_preferences: ^2.2.2
+  workmanager: ^0.5.2
+  flutter_local_notifications: ^17.0.0
 
 dev_dependencies:
   flutter_test:
