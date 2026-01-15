@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FirestoreService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final CollectionReference _conseilCollection = _firestore.collection('conseil');
+  static final CollectionReference _quizCollection = _firestore.collection('quizzes'); // 'quizzes' avec un 's'
 
 
   // TEMPORARY TEST DATA
@@ -17,7 +18,7 @@ class FirestoreService {
         'tags': {'rich','people'},
         'type': 'famous',
       });
-      
+
       print('✅ Test data uploaded successfully! Document ID: ${docRef.id}');
       return docRef.id;
     } catch (e) {
@@ -29,6 +30,10 @@ class FirestoreService {
 
   static Future<List<Map<String, dynamic>>> getConseils() async {
     return getCollectionData(_conseilCollection.id);
+  }
+
+  static Future<List<Map<String, dynamic>>> getQuizzes() async {
+    return getCollectionData(_quizCollection.id);
   }
 
   static Future<List<Map<String, dynamic>>> getCollectionData(String collectionName) async {
