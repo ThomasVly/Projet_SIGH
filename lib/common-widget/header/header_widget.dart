@@ -9,6 +9,7 @@ class HeaderWidget extends StatelessWidget {
   final VoidCallback? onProfileTap;
   final bool isCollapsed;
   final BuildContext? navigationContext;
+  final Widget? trailing;
 
   const HeaderWidget({
     super.key,
@@ -19,6 +20,7 @@ class HeaderWidget extends StatelessWidget {
     this.onProfileTap,
     this.isCollapsed = false,
     this.navigationContext,
+    this.trailing,
   });
 
   @override
@@ -141,6 +143,10 @@ class HeaderWidget extends StatelessWidget {
                     ),
                   ),
                 ),
+
+              // Onobarding
+              if (!isHomePage && trailing != null)
+                trailing!,
             ],
           ),
         ],
@@ -148,4 +154,3 @@ class HeaderWidget extends StatelessWidget {
     );
   }
 }
-
