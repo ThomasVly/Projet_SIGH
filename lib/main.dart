@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
-import 'database_test_page.dart';
-import 'pages/badges/badges_page.dart';
-import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'shared/firebase/firebase_options.dart';
 import 'pages/home/home_page.dart';
-import 'pages/conseils/conseils_page.dart';
 import 'pages/profile/profile_page.dart';
 import 'pages/notifications/notifications_history_page.dart';
+import 'pages/challenges/challenges_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
 import 'common-widget/header/header_widget.dart';
 
-import 'shared/firebase/firebase_service.dart';
 
 void main() async {
-  await FirebaseService.initialize();
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -47,11 +48,11 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 2; // Démarrer sur la page Accueil
 
   final List<Map<String, dynamic>> _pages = [
-    {'page': const GenericPage(title: 'Défis'), 'title': 'Défis'},
-    {'page': const EquipmentsPage(), 'title': 'Analyse'},
+    {'page': const ChallengesPage(), 'title': 'Défis'},
+    {'page': const GenericPage(title: 'Analyse'), 'title': 'Analyse'},
     {'page': const HomePage(), 'title': 'Accueil'},
     {'page': const GenericPage(title: 'Conseils'), 'title': 'Conseils'},
-    {'page': const SettingsPage(), 'title': 'Paramètres'}
+    {'page': const GenericPage(title: 'Paramètres'), 'title': 'Paramètres'}
   ];
 
   void _onNavbarTap(int index) {
@@ -110,6 +111,5 @@ class GenericPage extends StatelessWidget {
     );
   }
 }
-
 
 
