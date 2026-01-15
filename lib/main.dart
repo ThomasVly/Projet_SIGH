@@ -49,10 +49,10 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Map<String, dynamic>> _pages = [
     {'page': const ChallengesPage(), 'title': 'Défis'},
-    {'page': const EquipmentsPage(title: 'Analyse'), 'title': 'Analyse'},
+    {'page': const EquipmentsPage(), 'title': 'Analyse'},
     {'page': const HomePage(), 'title': 'Accueil'},
     {'page': const GenericPage(title: 'Conseils'), 'title': 'Conseils'},
-    {'page': const SettingsPage(title: 'Paramètres'), 'title': 'Paramètres'}
+    {'page': const SettingsPage(), 'title': 'Paramètres'}
   ];
 
   void _onNavbarTap(int index) {
