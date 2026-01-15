@@ -3,6 +3,8 @@ import 'package:path/path.dart';
 import '../models/room.dart';
 import '../models/equipment.dart';
 import '../models/appliance.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class EquipmentService {
   static final EquipmentService _instance = EquipmentService._internal();
