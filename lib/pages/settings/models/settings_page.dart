@@ -7,9 +7,10 @@ import 'package:projet_sigh_grp1/pages/settings/models/help_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/conditions_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/reminder_page.dart';
 import 'conditions_page.dart';
-import 'notifications_page.dart';
+import 'conditions_page.dart';
 import '../components/settings_card.dart';
-import 'notifications_page.dart';
+
+import '../../Rappel/rappel_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -43,17 +44,9 @@ class SettingsPage extends StatelessWidget {
                         SizedBox(height: constraints.maxHeight * 0.02),
 
                         SettingsCard(
-                          title: 'Gérer les notifications',
+                          title: 'Gérer les notifications et rappels',
                           backgroundColor: Colors.white,
                           onTap: () => _handleNotifications(context),
-                          height: cardHeight,
-                        ),
-                        SizedBox(height: spacing),
-
-                        SettingsCard(
-                          title: 'Modifier la configuration des rappels',
-                          backgroundColor: Colors.white,
-                          onTap: () => _handleReminders(context),
                           height: cardHeight,
                         ),
                         SizedBox(height: spacing),
@@ -102,7 +95,7 @@ class SettingsPage extends StatelessWidget {
   void _handleNotifications(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const NotificationsPage()),
+      MaterialPageRoute(builder: (context) => const RappelPage()),
     );
   }
 
