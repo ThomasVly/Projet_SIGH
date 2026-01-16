@@ -5,6 +5,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'package:projet_sigh_grp1/shared/local_database/db-creator.dart';
 import 'package:projet_sigh_grp1/shared/firebase/firestore_service.dart';
+import '../quiz/quiz_themes_page.dart';
 import 'defi_mensuel_page.dart';
 
 class DefisMenuPage extends StatefulWidget {
@@ -109,8 +110,12 @@ class _DefisMenuContent extends StatelessWidget {
             icon: Icons.flag_circle_outlined,
             iconBackground: const Color(0xFFE0F2FE),
             title: 'Quiz',
-            onTap: () {
-              // TODO: Navigation vers Quiz
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const QuizThemesPage(),
+                ),
+              );
             },
           ),
 
