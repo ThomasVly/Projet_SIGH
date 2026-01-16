@@ -78,7 +78,7 @@ class _ApplianceSelectionPageState extends State<ApplianceSelectionPage> {
 
     try {
       for (final appliance in _selectedAppliances) {
-        final equipment = appliance.toEquipment(widget.room.name);
+        final equipment = await appliance.toEquipment(widget.room.name);
         await _equipmentService.insertEquipment(equipment);
       }
 

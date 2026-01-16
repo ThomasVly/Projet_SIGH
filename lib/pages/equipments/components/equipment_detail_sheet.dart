@@ -28,7 +28,8 @@ class _EquipmentDetailBottomSheetState extends State<EquipmentDetailBottomSheet>
   late TextEditingController _hoursPerDayController;
   late TextEditingController _daysPerWeekController;
   late String _selectedRoom;
-  
+  double? _kwhPrice;
+
   final _formKey = GlobalKey<FormState>();
 
   Appliance? get defaultAppliance {
@@ -58,6 +59,14 @@ class _EquipmentDetailBottomSheetState extends State<EquipmentDetailBottomSheet>
       text: widget.equipment.usageDaysPerWeek.toString()
     );
     _selectedRoom = widget.equipment.roomName;
+    _loadKwhPrice();
+  }
+
+  Future<void> _loadKwhPrice() async {
+    final price = await Equipment.getKwhPrice();
+    setState(() {
+      _kwhPrice = price;
+    });
   }
 
   @override
@@ -308,8 +317,9 @@ class _EquipmentDetailBottomSheetState extends State<EquipmentDetailBottomSheet>
                         const Color(0xFF003063),
                       ),
                       _buildResultItem(
-                        '${widget.equipment.monthlyCost.toStringAsFixed(1)} €',
-                        Icons.euro,
+                        _kwhPrice != null
+                            ? '${widget.equipment.monthlyCostWithPrice(_kwhPrice!).toStringAsFixed(1)} €'
+                            : '... €',                        Icons.euro,
                         const Color(0xFF72BA00),
                       ),
                     ],

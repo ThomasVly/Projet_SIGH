@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'equipment.dart';
 
 class Appliance {
@@ -18,14 +19,19 @@ class Appliance {
     this.usageDaysPerWeek = 7,
   });
 
-  static const double defaultPricePerKwh = 0.2;
+  // Méthode statique pour récupérer le prix du kWh
+  static Future<double> getKwhPrice() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('kwh_price') ?? 0.20;
+  }
 
   double get monthlyConsumptionKwh {
     return consumptionPerHour * usageHoursPerDay * usageDaysPerWeek * 4.33;
   }
 
-  double get monthlyCost {
-    return monthlyConsumptionKwh * defaultPricePerKwh;
+  Future<double> getMonthlyCost() async {
+    final price = await getKwhPrice();
+    return monthlyConsumptionKwh * price;
   }
 
   static final List<Appliance> predefinedAppliances = [
@@ -667,15 +673,16 @@ class Appliance {
 }
 
 extension ApplianceExtension on Appliance {
-  Equipment toEquipment(String roomName) {
+  Future<Equipment> toEquipment(String roomName) async {
+    final kwhPrice = await Appliance.getKwhPrice();
     return Equipment(
       name: name,
       roomName: roomName,
       consumptionPerHour: consumptionPerHour,
       usageHoursPerDay: usageHoursPerDay,
       usageDaysPerWeek: usageDaysPerWeek,
-      pricePerKwh: Appliance.defaultPricePerKwh,
       icon: icon,
+      cachedKwhPrice: kwhPrice,
     );
   }
 }

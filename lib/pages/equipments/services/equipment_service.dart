@@ -45,7 +45,6 @@ class EquipmentService {
             consumption_per_hour REAL NOT NULL,
             usage_hours_per_day REAL NOT NULL,
             usage_days_per_week INTEGER NOT NULL,
-            price_per_kwh REAL NOT NULL,
             icon_code_point INTEGER,
             icon_font_family TEXT,
             icon_font_package TEXT,
@@ -139,13 +138,13 @@ class EquipmentService {
       whereArgs: [roomName],
       orderBy: 'created_at DESC',
     );
-    return maps.map((map) => Equipment.fromMap(map)).toList();
+    return await Equipment.fromMapList(maps);
   }
 
   Future<List<Equipment>> getAllEquipments() async {
     final db = await database;
     final maps = await db.query('equipments', orderBy: 'created_at DESC');
-    return maps.map((map) => Equipment.fromMap(map)).toList();
+    return await Equipment.fromMapList(maps);
   }
 
   Future<Map<String, List<Equipment>>> getEquipmentsByRooms() async {
@@ -174,13 +173,14 @@ class EquipmentService {
   // Statistiques
   Future<InventoryStats> getInventoryStats() async {
     final allEquipments = await getAllEquipments();
-    
+    final kwhPrice = await Equipment.getKwhPrice(); // Récupère le prix une fois
+
     final totalMonthlyConsumption = allEquipments.fold(0.0, (sum, equipment) {
       return sum + equipment.monthlyConsumptionKwh;
     });
     
     final totalMonthlyCost = allEquipments.fold(0.0, (sum, equipment) {
-      return sum + equipment.monthlyCost;
+      return sum + equipment.monthlyCostWithPrice(kwhPrice);
     });
     
     return InventoryStats(

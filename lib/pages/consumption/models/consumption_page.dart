@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:projet_sigh_grp1/common-widget/header/header_widget.dart';
 import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:projet_sigh_grp1/shared/local_database/db-creator.dart'; // Ajuste le chemin selon ton projet
 
 class ConsumptionPage extends StatefulWidget {
   const ConsumptionPage({Key? key}) : super(key: key);
@@ -39,10 +41,35 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
   int selectedYear = 2026;
   final TextEditingController consumptionController = TextEditingController();
 
+  final TextEditingController kwhPriceController = TextEditingController(text: '0.20');
+  double kwhPrice = 0.20; // Prix par défaut en €/kWh
+
+  @override
+  void initState() {
+    super.initState();
+    _loadKwhPrice(); // Charge le prix au démarrage
+  }
+
   @override
   void dispose() {
     consumptionController.dispose();
     super.dispose();
+  }
+
+  // Charger le prix du kWh depuis SharedPreferences
+  Future<void> _loadKwhPrice() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPrice = prefs.getDouble('kwh_price') ?? 0.20;
+    setState(() {
+      kwhPrice = savedPrice;
+      kwhPriceController.text = savedPrice.toString();
+    });
+  }
+
+  // Sauvegarder le prix du kWh dans SharedPreferences
+  Future<void> _saveKwhPrice(double price) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('kwh_price', price);
   }
 
   List<MapEntry<String, double>> getFilteredData() {
@@ -80,11 +107,27 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                     navigationContext: context,
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 20),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const EquipmentsPage()),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1E3A5F),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Equipements'),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
                         _buildPeriodSelector(),
                         const SizedBox(height: 20),
                         _buildConsumptionChart(),
@@ -104,19 +147,6 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                     ),
                   ),
                 ],
-              ),
-            ),
-            Positioned(
-              top: 100,
-              right: 20,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const EquipmentsPage()),
-                  );
-                },
-                child: const Text('Equipements'),
               ),
             ),
           ],
@@ -220,6 +250,31 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          const Text(
+            'Prix du kWh',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 5),
+          TextField(
+            controller: kwhPriceController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              suffixText: '€/kWh',
+              hintText: kwhPrice.toStringAsFixed(2), // Utilise le prix chargé
+            ),
+            onChanged: (value) {
+              double? newPrice = double.tryParse(value.replaceAll(',', '.'));
+              if (newPrice != null && newPrice > 0) {
+                setState(() {
+                  kwhPrice = newPrice;
+                });
+                _saveKwhPrice(newPrice);
+              }
+            },
+          ),
         ],
       ),
     );
@@ -254,9 +309,32 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
       );
     }
 
+
     var values = filteredData.map((e) => e.value).toList();
     double minY = values.reduce((a, b) => a < b ? a : b) - 20;
     double maxY = values.reduce((a, b) => a > b ? a : b) + 20;
+
+    // Calcul min et max pour le gradient de couleur
+    double minConsumption = values.reduce((a, b) => a < b ? a : b);
+    double maxConsumption = values.reduce((a, b) => a > b ? a : b);
+
+    // Fonction pour obtenir la couleur en fonction de la consommation
+    Color getColorForConsumption(double consumption) {
+      if (maxConsumption == minConsumption) {
+        return Colors.orange; // Si toutes les valeurs sont identiques
+      }
+
+      // Normaliser la valeur entre 0 et 1
+      double normalized = (consumption - minConsumption) / (maxConsumption - minConsumption);
+
+      // Interpolation du rouge (haute conso) au vert (basse conso)
+      // Rouge pour normalized proche de 1, vert pour normalized proche de 0
+      return Color.lerp(
+        Colors.green,      // Basse consommation
+        Colors.red,        // Haute consommation
+        normalized,
+      )!;
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -299,8 +377,9 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                         final consumption = touchedSpot.y;
                         final period = filteredData[index].key;
                         var parts = period.split('-');
+                        final cost = consumption * kwhPrice;
                         return LineTooltipItem(
-                          '${formatMonthYear(period)} ${parts[0]}\n${consumption.toStringAsFixed(0)}W',
+                          '${formatMonthYear(period)} ${parts[0]}\n${consumption.toStringAsFixed(0)}kWh\n${cost.toStringAsFixed(2)} €',
                           const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -370,7 +449,7 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                       reservedSize: 40,
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          '${value.toInt()}W',
+                          '${value.toInt()}kWh',
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 12,
@@ -401,11 +480,11 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, barData, index) {
+                        final consumption = filteredData[index].value;
+                        final dotColor = getColorForConsumption(consumption);
                         return FlDotCirclePainter(
                           radius: touchedIndex == index ? 6 : 4,
-                          color: touchedIndex == index
-                              ? Colors.orange
-                              : const Color(0xFF1E3A5F),
+                          color: dotColor,
                           strokeWidth: 2,
                           strokeColor: Colors.white,
                         );
@@ -500,9 +579,9 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                       controller: consumptionController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Consommation (W)',
+                        labelText: 'Consommation (kWh)',
                         border: OutlineInputBorder(),
-                        suffixText: 'W',
+                        suffixText: 'kWh',
                       ),
                     ),
                   ],
@@ -571,16 +650,231 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
     double max = values.reduce((a, b) => a > b ? a : b);
     double current = values.last;
 
+    // Calcul du pourcentage de variation par rapport à la moyenne
+    double variationPercent = ((current - average) / average) * 100;
+    String lastPeriod = filteredData.last.key;
+    var parts = lastPeriod.split('-');
+    String lastMonthFormatted = '${formatMonthYear(lastPeriod)} ${parts[0]}';
+    bool isIncrease = variationPercent > 0;
+    Color variationColor = isIncrease ? Colors.red : Colors.green;
+    String variationText = '${isIncrease ? '+' : ''}${variationPercent.toStringAsFixed(1)}%';
+    IconData variationIcon = isIncrease ? Icons.trending_up : Icons.trending_down;
+
     return Column(
       children: [
-        _buildStatCard('Consommation moyenne', '${average.toStringAsFixed(0)}W', Colors.blue),
-        const SizedBox(height: 10),
-        _buildStatCard('Consommation maximale', '${max.toStringAsFixed(0)}W', Colors.orange),
-        const SizedBox(height: 10),
-        _buildStatCard('Consommation actuelle', '${current.toStringAsFixed(0)}W', Colors.green),
+        // Cadre unique pour les statistiques
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Consommation moyenne
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Consommation moyenne',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Text(
+                    '${average.toStringAsFixed(0)} kWh',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Divider(color: Colors.grey.withOpacity(0.3)),
+              const SizedBox(height: 12),
+
+              // Consommation maximale
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Consommation maximale',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Text(
+                    '${max.toStringAsFixed(0)} kWh',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Divider(color: Colors.grey.withOpacity(0.3)),
+              const SizedBox(height: 12),
+
+              // Consommation pour le mois X avec la valeur
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Consommation pour $lastMonthFormatted',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Text(
+                    '${current.toStringAsFixed(0)} kWh',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8), // Petit espacement sans divider
+
+              // Variation par rapport à la période (même row, sans séparation)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Par rapport au reste de la période',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        variationIcon,
+                        color: variationColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        variationText,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: variationColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // Texte augmentation/diminution aligné à droite
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    isIncrease ? 'Augmentation' : 'Diminution',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: variationColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
+
+
+
+
+  Widget _buildVariationCard(String title, String value, Color color, IconData icon, bool isIncrease) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isIncrease ? 'Augmentation' : 'Diminution',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildStatCard(String title, String value, Color color) {
     return Container(
