@@ -1,8 +1,10 @@
 /// Modèle pour les contenus (Articles, Fiches info, Tutoriels)
 class ContentModel {
   final int? id;
+  final String? remoteId;
   final String title;
   final String tags;
+  final String description;
   final bool hasBeenRead;
   final int notation;
   final bool isFavorite;
@@ -14,8 +16,10 @@ class ContentModel {
 
   ContentModel({
     this.id,
+    this.remoteId,
     required this.title,
     required this.tags,
+    this.description = '',
     this.hasBeenRead = false,
     this.notation = 0,
     this.isFavorite = false,
@@ -30,8 +34,10 @@ class ContentModel {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'remoteId': remoteId,
       'title': title,
       'tags': tags,
+      'description': description,
       'hasBeenRead': hasBeenRead ? 1 : 0,
       'notation': notation,
       'isFavorite': isFavorite ? 1 : 0,
@@ -47,8 +53,10 @@ class ContentModel {
   factory ContentModel.fromMap(Map<String, dynamic> map) {
     return ContentModel(
       id: map['id'] as int?,
+      remoteId: map['remoteId'] as String?,
       title: map['title'] as String,
       tags: map['tags'] as String,
+      description: (map['description'] as String?) ?? '',
       hasBeenRead: map['hasBeenRead'] == 1,
       notation: map['notation'] as int,
       isFavorite: map['isFavorite'] == 1,
@@ -90,8 +98,10 @@ class ContentModel {
   /// Copie l'objet avec des modifications
   ContentModel copyWith({
     int? id,
+    String? remoteId,
     String? title,
     String? tags,
+    String? description,
     bool? hasBeenRead,
     int? notation,
     bool? isFavorite,
@@ -103,8 +113,10 @@ class ContentModel {
   }) {
     return ContentModel(
       id: id ?? this.id,
+      remoteId: remoteId ?? this.remoteId,
       title: title ?? this.title,
       tags: tags ?? this.tags,
+      description: description ?? this.description,
       hasBeenRead: hasBeenRead ?? this.hasBeenRead,
       notation: notation ?? this.notation,
       isFavorite: isFavorite ?? this.isFavorite,
