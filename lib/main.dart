@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
+import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
 import 'shared/firebase/firebase_options.dart';
 import 'pages/home/home_page.dart';
 import 'pages/profile/profile_page.dart';
 import 'pages/notifications/notifications_history_page.dart';
-import 'pages/challenges/challenges_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
 import 'common-widget/header/header_widget.dart';
 import 'package:projet_sigh_grp1/pages/defis/defis_page.dart';
