@@ -29,7 +29,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
     equipmentCount: 0,
     totalConsumption: 0,
   );
-  
+
   List<Equipment> _topConsumingEquipments = [];
   bool _showOnboarding = false;
   bool _isLoading = true;
@@ -43,10 +43,10 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
 
   Future<void> _checkOnboardingStatus() async {
     final isCompleted = await OnboardingService.isOnboardingCompleted();
-    
+
     if (!isCompleted) {
       await Future.delayed(Duration(milliseconds: 500));
-      
+
       if (mounted) {
         setState(() {
           _showOnboarding = true;
@@ -64,10 +64,10 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
   Future<void> _loadData() async {
     final rooms = await _equipmentService.getAllRooms();
     rooms.sort((a, b) => a.name.compareTo(b.name));
-    
+
     final equipmentsByRoom = await _equipmentService.getEquipmentsByRooms();
     final stats = await _equipmentService.getInventoryStats();
-    
+
     final allEquipments = await _equipmentService.getAllEquipments();
     _updateTopConsumingEquipments(allEquipments);
 
@@ -79,9 +79,10 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
   }
 
   void _updateTopConsumingEquipments(List<Equipment> allEquipments) {
-    allEquipments.sort((a, b) => 
-        b.monthlyConsumptionKwh.compareTo(a.monthlyConsumptionKwh));
-    
+    allEquipments.sort(
+      (a, b) => b.monthlyConsumptionKwh.compareTo(a.monthlyConsumptionKwh),
+    );
+
     _topConsumingEquipments = allEquipments.take(5).toList();
   }
 
@@ -95,7 +96,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
       final newRoom = Room(name: newRoomName);
       await _equipmentService.insertRoom(newRoom);
       _loadData();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Pièce "$newRoomName" ajoutée avec succès'),
@@ -115,9 +116,9 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
       try {
         final oldName = room.name;
         final updatedRoom = room.copyWith(name: newName);
-        
+
         await _equipmentService.updateRoom(updatedRoom);
-        
+
         final db = await _equipmentService.database;
         await db.update(
           'equipments',
@@ -125,9 +126,9 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
           where: 'room_name = ?',
           whereArgs: [oldName],
         );
-        
+
         _loadData();
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Pièce renommée en "$newName"'),
@@ -159,7 +160,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
       try {
         await _equipmentService.deleteRoom(room.id!);
         _loadData();
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Pièce "${room.name}" supprimée avec succès'),
@@ -177,7 +178,10 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
     }
   }
 
-  Future<void> _deleteEquipment(Equipment equipment, BuildContext bottomSheetContext) async {
+  Future<void> _deleteEquipment(
+    Equipment equipment,
+    BuildContext bottomSheetContext,
+  ) async {
     final confirmDelete = await showDialog<bool>(
       context: bottomSheetContext,
       builder: (context) => ConfirmDeleteDialog(
@@ -195,11 +199,11 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
           where: 'id = ?',
           whereArgs: [equipment.id],
         );
-        
+
         Navigator.pop(bottomSheetContext);
-        
+
         await _loadData();
-        
+
         ScaffoldMessenger.of(bottomSheetContext).showSnackBar(
           SnackBar(
             content: Text('"${equipment.name}" supprimé avec succès'),
@@ -222,7 +226,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
 
   void _addEquipmentToRoom(String roomName) {
     final room = _rooms.firstWhere((r) => r.name == roomName);
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -237,7 +241,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
 
   void _showEquipmentDetails(BuildContext context, Equipment equipment) {
     final availableRooms = _rooms.map((room) => room.name).toList();
-    
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -271,7 +275,9 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
           onDelete: () => _deleteEquipment(equipment, context),
           onReset: (defaultAppliance) async {
             try {
-              final defaultEquipment = equipment.resetToDefault(defaultAppliance);
+              final defaultEquipment = equipment.resetToDefault(
+                defaultAppliance,
+              );
               await _equipmentService.updateEquipment(defaultEquipment);
               _loadData();
               Navigator.pop(context);
@@ -296,8 +302,9 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
   }
 
   bool _isTopConsumingEquipment(Equipment equipment) {
-    return _topConsumingEquipments.any((topEquipment) => 
-        topEquipment.id == equipment.id);
+    return _topConsumingEquipments.any(
+      (topEquipment) => topEquipment.id == equipment.id,
+    );
   }
 
   Widget _buildAddRoomButton() {
@@ -313,11 +320,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
               color: Colors.blue,
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Icon(
-              Icons.add,
-              size: 28,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.add, size: 28, color: Colors.white),
           ),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
@@ -372,13 +375,36 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
                   tooltip: 'Voir le guide d\'utilisation',
                 ),
               ),
-              
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 2,
+                ),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context); // Retour simple
+                      // OU si tu veux forcer le retour vers ConsumptionPage :
+                      // Navigator.pushReplacement(
+                      //   context,
+                      //   MaterialPageRoute(builder: (context) => const ConsumptionPage()),
+                      // );
+                    },
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Retour'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E3A5F),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+
               if (_isLoading)
                 Expanded(
                   child: Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF405F90),
-                    ),
+                    child: CircularProgressIndicator(color: Color(0xFF405F90)),
                   ),
                 )
               else
@@ -419,7 +445,8 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
                                   padding: EdgeInsets.only(top: 40),
                                   child: Center(
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.home_work,
@@ -476,10 +503,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
           ),
         ),
 
-        if (_showOnboarding)
-          OnboardingOverlay(
-            onComplete: _completeOnboarding,
-          ),
+        if (_showOnboarding) OnboardingOverlay(onComplete: _completeOnboarding),
       ],
     );
   }

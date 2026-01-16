@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:projet_sigh_grp1/pages/consumption/models/consumption_page.dart';
 import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
+import 'database_test_page.dart';
+import 'pages/badges/badges_page.dart';
+import 'pages/conseils/conseils_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
 import 'shared/firebase/firebase_options.dart';
 import 'pages/home/home_page.dart';
@@ -26,6 +30,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'SIGH',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -51,7 +56,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Map<String, dynamic>> _pages = [
     {'page': const DefisPage(), 'title': 'Défis'},
-    {'page': const EquipmentsPage(), 'title': 'Analyse'},
+    {'page': const ConsumptionPage(), 'title': 'Analyse'},
     {'page': const HomePage(), 'title': 'Accueil'},
     {'page': const ConseilsPage(), 'title': 'Conseils'},
     {'page': const SettingsPage(), 'title': 'Paramètres'}
@@ -113,5 +118,6 @@ class GenericPage extends StatelessWidget {
     );
   }
 }
+
 
 
