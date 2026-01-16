@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FirestoreService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final CollectionReference _conseilCollection = _firestore.collection('conseil');
+  static final CollectionReference _quizCollection = _firestore.collection('quizzes'); // 'quizzes' avec un 's'
 
 
   /// Récupère tous les conseils (documents) depuis Firestore
@@ -46,6 +47,10 @@ class FirestoreService {
 
 
 
+  static Future<List<Map<String, dynamic>>> getQuizzes() async {
+    return getCollectionData(_quizCollection.id);
+  }
+
   static Future<List<Map<String, dynamic>>> getCollectionData(String collectionName) async {
     try {
       final querySnapshot = await _firestore.collection(collectionName).get();
@@ -58,4 +63,36 @@ class FirestoreService {
       rethrow;
     }
   }
+
+  //  SECTION CHALLENGES (DÉFIS)
+ static final CollectionReference _challengesCollection =
+      _firestore.collection('challenges');
+
+  /// Récupère les défis de la collection "challenges"
+  ///
+  /// Retour : List<Map> avec au minimum :
+  ///  - id (String)
+  ///  - title (String)
+  ///  - description (String)
+  ///  - reminder (String)
+  ///  - reward (int)
+  ///  - month (String "YYYY-MM")
+  static Future<List<Map<String, dynamic>>> getChallenges() async {
+    try {
+      final querySnapshot = await _challengesCollection
+          .orderBy('month', descending: true) // du plus récent au plus ancien
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => {
+                'id': doc.id,
+                ...doc.data() as Map<String, dynamic>,
+              })
+          .toList();
+    } catch (e) {
+      print('❌ Error fetching challenges: $e');
+      rethrow;
+    }
+  }
 }
+

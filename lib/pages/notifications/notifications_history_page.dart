@@ -20,12 +20,30 @@ class _NotificationsHistoryPageState extends State<NotificationsHistoryPage> {
       body: SafeArea(
         child: Column(
           children: [
-            HeaderWidget(
-              title: 'Notifications',
-              isHomePage: false,
-              onNotificationTap: () {
-                Navigator.pop(context);
-              },
+            Stack(
+              children: [
+                HeaderWidget(
+                  title: 'Notifications',
+                  isHomePage: false,
+                  onNotificationTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                Positioned(
+                  left: -5,
+                  top: -80,
+                  bottom: 0,
+                  child: Center(
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: 'Retour',
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                ),
+              ],
             ),
             Expanded(
               child: notifications.isEmpty

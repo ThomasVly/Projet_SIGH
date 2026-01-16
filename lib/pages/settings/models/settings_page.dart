@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:projet_sigh_grp1/common-widget/header/header_widget.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/help_page.dart';
+import 'package:projet_sigh_grp1/pages/settings/models/privacy_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/reminder_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/help_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/conditions_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/reminder_page.dart';
 import 'conditions_page.dart';
-import 'notifications_page.dart';
+import 'conditions_page.dart';
 import '../components/settings_card.dart';
-import 'notifications_page.dart';
+
+import '../../Rappel/rappel_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -42,17 +44,9 @@ class SettingsPage extends StatelessWidget {
                         SizedBox(height: constraints.maxHeight * 0.02),
 
                         SettingsCard(
-                          title: 'Gérer les notifications',
+                          title: 'Gérer les notifications et rappels',
                           backgroundColor: Colors.white,
                           onTap: () => _handleNotifications(context),
-                          height: cardHeight,
-                        ),
-                        SizedBox(height: spacing),
-
-                        SettingsCard(
-                          title: 'Modifier la configuration des rappels',
-                          backgroundColor: Colors.white,
-                          onTap: () => _handleReminders(context),
                           height: cardHeight,
                         ),
                         SizedBox(height: spacing),
@@ -69,6 +63,14 @@ class SettingsPage extends StatelessWidget {
                           title: 'Aide',
                           backgroundColor: Colors.white,
                           onTap: () => _handleHelp(context),
+                          height: cardHeight,
+                        ),
+
+                        SizedBox(height: spacing),
+                        SettingsCard(
+                          title: 'Confidentialité & Données',
+                          backgroundColor: Colors.white,
+                          onTap: () => _handlePrivacy(context),
                           height: cardHeight,
                         ),
 
@@ -93,7 +95,7 @@ class SettingsPage extends StatelessWidget {
   void _handleNotifications(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const NotificationsPage()),
+      MaterialPageRoute(builder: (context) => const RappelPage()),
     );
   }
 
@@ -115,6 +117,13 @@ class SettingsPage extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const HelpPage()),
+    );
+  }
+
+  void _handlePrivacy(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PrivacyPage()),
     );
   }
 }
