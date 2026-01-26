@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:projet_sigh_grp1/pages/consumption/models/consumption_page.dart';
+import 'package:flutter/services.dart';
 import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
 import 'database_test_page.dart';
 import 'pages/badges/badges_page.dart';
@@ -8,19 +7,30 @@ import 'pages/conseils/conseils_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
 import 'shared/firebase/firebase_options.dart';
 import 'pages/home/home_page.dart';
+import 'pages/conseils/conseils_page.dart';
 import 'pages/profile/profile_page.dart';
 import 'pages/notifications/notifications_history_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
 import 'common-widget/header/header_widget.dart';
+import 'shared/firebase/firebase_service.dart';
 import 'package:projet_sigh_grp1/pages/defis/defis_page.dart';
 
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  await FirebaseService.initialize();
+
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Color(0xFF264777), // La même couleur que votre Header
+    statusBarIconBrightness: Brightness.light, // Icônes blanches (heure, batterie...)
+  ));
+
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const MyApp());
 }
 
@@ -56,7 +66,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Map<String, dynamic>> _pages = [
     {'page': const DefisPage(), 'title': 'Défis'},
-    {'page': const ConsumptionPage(), 'title': 'Analyse'},
+    {'page': const EquipmentsPage(), 'title': 'Analyse'},
     {'page': const HomePage(), 'title': 'Accueil'},
     {'page': const ConseilsPage(), 'title': 'Conseils'},
     {'page': const SettingsPage(), 'title': 'Paramètres'}
