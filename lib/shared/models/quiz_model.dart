@@ -41,7 +41,7 @@ class QuizQuestion {
     return QuizQuestion(
       question: map['question'] as String? ?? '',
       options: List<String>.from(map['options'] as List? ?? []),
-      correctAnswer: map['correctAnswer'] as int? ?? 0,
+      correctAnswer: map['answer'] as int? ?? map['correctAnswer'] as int? ?? 0,
       explanation: map['explanation'] as String? ?? '',
     );
   }
