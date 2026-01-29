@@ -40,6 +40,25 @@ const typeInput = document.getElementById('type');
 const btnTutorial = document.getElementById('btnTutorial');
 const btnFiche = document.getElementById('btnFiche');
 
+// Heating sliders
+const heatingEnergySlider = document.getElementById('heatingEnergy');
+const heatingTypeSlider = document.getElementById('heatingType');
+const heatingEnergyValue = document.getElementById('heatingEnergyValue');
+const heatingTypeValue = document.getElementById('heatingTypeValue');
+
+// Heating slider configuration
+const HEATING_ENERGY_OPTIONS = {
+    0: { label: 'Chauffage électrique', tag: 'chauffage électrique', class: 'tag-electrique' },
+    1: { label: 'Tout le monde', tag: null, class: '' },
+    2: { label: 'Chauffage gaz', tag: 'chauffage gaz', class: 'tag-gaz' }
+};
+
+const HEATING_TYPE_OPTIONS = {
+    0: { label: 'Chauffage collectif', tag: 'chauffage collectif', class: 'tag-collectif' },
+    1: { label: 'Tout le monde', tag: null, class: '' },
+    2: { label: 'Chauffage individuel', tag: 'chauffage individuel', class: 'tag-individuel' }
+};
+
 // Edit mode state
 let editingId = null;
 let editingPdfUrl = '';
@@ -281,13 +300,22 @@ function resetForm() {
     // Reset type toggle to tutorial
     typeInput.value = 'tutorial';
     btnTutorial.classList.add('active');
+
+    // Reset heating sliders
+    heatingEnergySlider.value = 1;
+    heatingTypeSlider.value = 1;
+    updateHeatingSliderDisplay();
     btnFiche.classList.remove('active');
+
+    // Reset reading time
+    document.getElementById('readingTime').value = 5;
 }
 
 function populateForm(conseil) {
     document.getElementById('title').value = conseil.title || '';
     document.getElementById('description').value = conseil.description || '';
     document.getElementById('tags').value = Array.isArray(conseil.tags) ? conseil.tags.join(', ') : '';
+    document.getElementById('readingTime').value = conseil.readingTime || 5;
 
     // Set type toggle
     const typeValue = conseil.type || 'tutorial';
@@ -316,6 +344,9 @@ function populateForm(conseil) {
         detailField.style.backgroundColor = '';
     }
 
+    // Set heating sliders based on existing tags
+    setHeatingSliderFromTags(conseil.tags);
+
     editingId = conseil.id;
     submitBtn.querySelector('.btn-text').textContent = '✏️ Modifier le conseil';
     submitBtn.classList.add('editing');
@@ -336,6 +367,71 @@ btnTutorial.addEventListener('click', () => {
 
 btnFiche.addEventListener('click', () => {
     typeInput.value = 'fiche';
+});
+
+// Heating slider event listeners
+function updateHeatingSliderDisplay() {
+    const energyOption = HEATING_ENERGY_OPTIONS[heatingEnergySlider.value];
+    const typeOption = HEATING_TYPE_OPTIONS[heatingTypeSlider.value];
+
+    heatingEnergyValue.textContent = energyOption.label;
+    heatingEnergyValue.className = 'slider-value ' + energyOption.class;
+
+    heatingTypeValue.textContent = typeOption.label;
+    heatingTypeValue.className = 'slider-value ' + typeOption.class;
+}
+
+heatingEnergySlider.addEventListener('input', updateHeatingSliderDisplay);
+heatingTypeSlider.addEventListener('input', updateHeatingSliderDisplay);
+
+// Initialize slider display
+document.addEventListener('DOMContentLoaded', updateHeatingSliderDisplay);
+
+// Helper function to get heating tags from sliders
+function getHeatingTags() {
+    const tags = [];
+    const energyOption = HEATING_ENERGY_OPTIONS[heatingEnergySlider.value];
+    const typeOption = HEATING_TYPE_OPTIONS[heatingTypeSlider.value];
+
+    if (energyOption.tag) tags.push(energyOption.tag);
+    if (typeOption.tag) tags.push(typeOption.tag);
+
+    return tags;
+}
+
+// Helper function to set sliders based on existing tags
+function setHeatingSliderFromTags(tags) {
+    const tagArray = Array.isArray(tags) ? tags : [];
+
+    // Energy slider
+    if (tagArray.includes('chauffage électrique')) {
+        heatingEnergySlider.value = 0;
+    } else if (tagArray.includes('chauffage gaz')) {
+        heatingEnergySlider.value = 2;
+    } else {
+        heatingEnergySlider.value = 1;
+    }
+
+    // Type slider
+    if (tagArray.includes('chauffage collectif')) {
+        heatingTypeSlider.value = 0;
+    } else if (tagArray.includes('chauffage individuel')) {
+        heatingTypeSlider.value = 2;
+    } else {
+        heatingTypeSlider.value = 1;
+    }
+
+    updateHeatingSliderDisplay();
+}
+
+// Filter out heating tags from user-entered tags (to avoid duplicates)
+function filterHeatingTags(tags) {
+    const heatingTagsList = ['chauffage électrique', 'chauffage gaz', 'chauffage collectif', 'chauffage individuel'];
+    return tags.filter(tag => !heatingTagsList.includes(tag.toLowerCase()));
+}
+
+// Dummy placeholder to maintain the structure
+(() => {
     btnFiche.classList.add('active');
     btnTutorial.classList.remove('active');
 });
@@ -389,9 +485,14 @@ conseilForm.addEventListener('submit', async (e) => {
     try {
         const formData = new FormData(conseilForm);
         const tagsInput = formData.get('tags');
-        const tags = tagsInput
+        let tags = tagsInput
             ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
             : [];
+
+        // Filter out existing heating tags and add new ones from sliders
+        tags = filterHeatingTags(tags);
+        const heatingTags = getHeatingTags();
+        tags = [...tags, ...heatingTags];
 
         const hasPdf = formData.get('pdf') === 'on';
         let pdfUrl = editingPdfUrl;
@@ -422,7 +523,8 @@ conseilForm.addEventListener('submit', async (e) => {
             pdf: hasPdf,
             pdfUrl: pdfUrl,
             pdfFileName: pdfFileName || '',
-            tags: tags
+            tags: tags,
+            readingTime: parseInt(formData.get('readingTime')) || 5
         };
 
         if (editingId) {

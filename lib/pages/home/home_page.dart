@@ -5,6 +5,8 @@ import '../conseils/services/content_service.dart';
 import '../equipments/services/equipment_service.dart';
 import 'components/home_chart_widget.dart';
 import 'components/home_reminder_section.dart';
+import '../../shared/services/onboarding_service.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,6 +17,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // Services & Data
+  String _userName = 'clara';
   final ContentService _contentService = ContentService();
   final EquipmentService _equipmentService = EquipmentService();
   final ScrollController _scrollController = ScrollController();
@@ -37,6 +40,14 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadData();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final name = await OnboardingService.getUserName();
+    setState(() {
+      _userName = name;
+    });
   }
 
   Widget _buildSectionDivider() {
@@ -92,14 +103,14 @@ class _HomePageState extends State<HomePage> {
             children: [
               // --- HEADER ---
               HeaderWidget(
-                userName: 'Clara',
+                userName: _userName,
                 isHomePage: true,
                 navigationContext: context,
               ),
 
               Expanded(
                 child: SingleChildScrollView(
-                controller: _scrollController,
+                  controller: _scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

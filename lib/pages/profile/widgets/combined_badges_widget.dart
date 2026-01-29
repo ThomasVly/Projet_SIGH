@@ -28,25 +28,14 @@ class CombinedBadgesWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final levelBadgeService = LevelBadgeService();
 
-    // Compter les badges d'énergie débloqués
-    final tempBadges = const BadgeService().fetchBadges(
-      quizCount: quizCount,
-      challengeCount: challengeCount,
-      articleCount: articleCount,
-      loginStreak: loginStreak,
-      energySaved: energySaved,
-      unlockedBadgesCount: 0,
-    );
-    final unlockedEnergyBadgesCount = tempBadges.where((b) => b.isUnlocked).length;
-
-    // Obtenir les badges d'énergie avec le compteur correct
+    // Obtenir les badges d'énergie (le compteur est maintenant calculé dans le service)
     final energyBadges = const BadgeService().fetchBadges(
       quizCount: quizCount,
       challengeCount: challengeCount,
       articleCount: articleCount,
       loginStreak: loginStreak,
       energySaved: energySaved,
-      unlockedBadgesCount: unlockedEnergyBadgesCount,
+      unlockedBadgesCount: 0, // Non utilisé maintenant
     );
 
     final unlockedLevelBadges = levelBadgeService.getUnlockedBadges(currentLevel);
