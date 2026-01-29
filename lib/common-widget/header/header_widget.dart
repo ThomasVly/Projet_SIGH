@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../pages/Rappel/rappel_page.dart';
+import '../../pages/settings/models/reminder_page.dart';
+
 class HeaderWidget extends StatelessWidget {
   final String? title;
   final String? userName;
@@ -33,6 +36,8 @@ class HeaderWidget extends StatelessWidget {
     final double logoIconSize = isCollapsed ? 20 : 32;
     final double notifSize = isCollapsed ? 22 : 32;
     final double bottomMargin = isCollapsed ? 8 : 20;
+
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Container(
       width: double.infinity,
@@ -129,9 +134,15 @@ class HeaderWidget extends StatelessWidget {
                 GestureDetector(
                   onTap: () {
                     if (navigationContext != null) {
-                      Navigator.of(navigationContext!).pushNamed('/notifications');
-                    } else if (onNotificationTap != null) {
-                      onNotificationTap!();
+                      Navigator.push(
+                        navigationContext!,
+                        MaterialPageRoute(builder: (context) => const RappelPage()),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const RappelPage()),
+                      );
                     }
                   },
                   child: Container(

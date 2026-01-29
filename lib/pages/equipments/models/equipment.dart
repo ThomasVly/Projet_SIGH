@@ -69,6 +69,7 @@ class Equipment {
       'icon_font_package': icon?.fontPackage,
       'has_custom_values': _hasCustomValues ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
+      'price_per_kwh': _cachedKwhPrice ?? 0.20,
     };
   }
 
