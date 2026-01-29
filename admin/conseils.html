@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Gestion des Conseils | SIGH</title>
+    <meta name="description" content="Interface d'administration pour la gestion des conseils SIGH">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-content">
+                <a href="index.html" class="back-link">← Retour</a>
+                <div class="logo">
+                    <span class="logo-icon">📋</span>
+                    <h1>SIGH Admin</h1>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Add Conseil Form -->
+            <section class="card form-section">
+                <div class="card-header">
+                    <h2>✨ Ajouter un nouveau conseil</h2>
+                </div>
+                <form id="conseilForm" class="conseil-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="title">Titre</label>
+                            <input type="text" id="title" name="title" required placeholder="Titre du conseil">
+                        </div>
+                        <div class="form-group">
+                            <label>Type</label>
+                            <div class="type-toggle">
+                                <button type="button" class="toggle-btn active" data-value="tutorial"
+                                    id="btnTutorial">📚 Tutorial</button>
+                                <button type="button" class="toggle-btn" data-value="fiche" id="btnFiche">📄
+                                    Fiche</button>
+                                <input type="hidden" id="type" name="type" value="tutorial">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" rows="2" required
+                            placeholder="Brève description du conseil"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tags">Tags (séparés par des virgules)</label>
+                            <input type="text" id="tags" name="tags" required
+                                placeholder="Ex: important, urgent, nouveau">
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="pdf" name="pdf">
+                                <span class="checkmark"></span>
+                                Contient un PDF
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Heating Sliders - Limitation accès -->
+                    <div class="form-section-header">
+                        <span class="section-icon">🔒</span>
+                        <span class="section-title">Limitation accès</span>
+                    </div>
+                    <div class="form-row slider-row">
+                        <div class="form-group">
+                            <label>Énergie de chauffage</label>
+                            <div class="slider-container">
+                                <span class="slider-label-left">⚡ Électrique</span>
+                                <input type="range" id="heatingEnergy" name="heatingEnergy" min="0" max="2" value="1"
+                                    class="heating-slider">
+                                <span class="slider-label-right">🔥 Gaz</span>
+                            </div>
+                            <div class="slider-value" id="heatingEnergyValue">Tout le monde</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Type de chauffage</label>
+                            <div class="slider-container">
+                                <span class="slider-label-left">🏢 Collectif</span>
+                                <input type="range" id="heatingType" name="heatingType" min="0" max="2" value="1"
+                                    class="heating-slider">
+                                <span class="slider-label-right">🏠 Individuel</span>
+                            </div>
+                            <div class="slider-value" id="heatingTypeValue">Tout le monde</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="detail">Détail</label>
+                        <textarea id="detail" name="detail" rows="4" required
+                            placeholder="Lien de l'article"></textarea>
+                    </div>
+
+                    <!-- PDF Upload Section (hidden by default) -->
+                    <div id="pdfUploadSection" class="form-group pdf-upload-section" style="display: none;">
+                        <label for="pdfFile">📄 Fichier PDF</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="pdfFile" name="pdfFile" accept=".pdf">
+                            <div class="file-input-display" id="fileDisplay">
+                                <span class="file-icon">📁</span>
+                                <span class="file-text">Cliquez pour sélectionner un PDF</span>
+                            </div>
+                        </div>
+                        <p class="file-hint">Le PDF sera uploadé sur GitHub</p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <span class="btn-text">Ajouter le conseil</span>
+                        <span class="btn-loader" style="display: none;">⏳</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Conseils List -->
+            <section class="card list-section">
+                <div class="card-header">
+                    <h2>📚 Liste des conseils</h2>
+                    <button class="btn btn-secondary" id="refreshBtn">🔄 Actualiser</button>
+                </div>
+                <div id="conseilsList" class="conseils-list">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Chargement des conseils...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Toast Notifications -->
+        <div id="toast" class="toast"></div>
+    </div>
+
+    <!-- Firebase SDK (compat version for no-server usage) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="conseils.js"></script>
+</body>
+
+</html>
