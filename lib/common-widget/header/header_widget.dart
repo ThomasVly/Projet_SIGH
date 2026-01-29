@@ -116,7 +116,7 @@ class HeaderWidget extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: isHomePage ? 16 : 0),
                   child: Text(
                     isHomePage
-                        ? 'Bonjour ${userName ?? "Clara"} !'
+                        ? 'Bonjour ${userName ?? "clara"} !'
                         : title ?? 'Page',
                     style: TextStyle(
                       color: Colors.white,
