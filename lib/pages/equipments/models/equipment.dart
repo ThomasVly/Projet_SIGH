@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'appliance.dart';
 
@@ -9,12 +10,13 @@ class Equipment {
   final double consumptionPerHour;
   final double usageHoursPerDay;
   final int usageDaysPerWeek;
-  final double pricePerKwh;
   final IconData? icon;
   final DateTime createdAt;
   
   bool get hasCustomValues => _hasCustomValues;
   bool _hasCustomValues = false;
+
+  double? _cachedKwhPrice;
 
   Equipment({
     this.id,
@@ -23,19 +25,35 @@ class Equipment {
     required this.consumptionPerHour,
     required this.usageHoursPerDay,
     required this.usageDaysPerWeek,
-    required this.pricePerKwh,
     this.icon,
     DateTime? createdAt,
     bool hasCustomValues = false,
+    double? cachedKwhPrice,
   })  : _hasCustomValues = hasCustomValues,
         createdAt = createdAt ?? DateTime.now();
+
+  // Méthode statique pour récupérer le prix du kWh
+  static Future<double> getKwhPrice() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('kwh_price') ?? 0.20;
+  }
+
+  // Getter pour le prix (récupère depuis le cache ou SharedPreferences)
+  Future<double> get pricePerKwh async {
+    _cachedKwhPrice ??= await getKwhPrice();
+    return _cachedKwhPrice!;
+  }
 
   double get monthlyConsumptionKwh {
     return consumptionPerHour * usageHoursPerDay * usageDaysPerWeek * 4.33;
   }
 
-  double get monthlyCost {
-    return monthlyConsumptionKwh * pricePerKwh;
+  Future<double> get monthlyCost async {
+    final price = await pricePerKwh;
+    return monthlyConsumptionKwh * price;
+  }
+  double monthlyCostWithPrice(double price) {
+    return monthlyConsumptionKwh * price;
   }
 
   Map<String, dynamic> toMap() {
@@ -46,16 +64,16 @@ class Equipment {
       'consumption_per_hour': consumptionPerHour,
       'usage_hours_per_day': usageHoursPerDay,
       'usage_days_per_week': usageDaysPerWeek,
-      'price_per_kwh': pricePerKwh,
       'icon_code_point': icon?.codePoint,
       'icon_font_family': icon?.fontFamily,
       'icon_font_package': icon?.fontPackage,
       'has_custom_values': _hasCustomValues ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
+      'price_per_kwh': _cachedKwhPrice ?? 0.20,
     };
   }
 
-  factory Equipment.fromMap(Map<String, dynamic> map) {
+  static Future<Equipment> fromMap(Map<String, dynamic> map) async {
     IconData? iconData;
     final codePoint = map['icon_code_point'];
     final fontFamily = map['icon_font_family'];
@@ -68,7 +86,7 @@ class Equipment {
         fontPackage: fontPackage,
       );
     }
-
+    final kwhPrice = await getKwhPrice();
     return Equipment(
       id: map['id'],
       name: map['name'],
@@ -76,11 +94,44 @@ class Equipment {
       consumptionPerHour: map['consumption_per_hour']?.toDouble() ?? 0.0,
       usageHoursPerDay: map['usage_hours_per_day']?.toDouble() ?? 1.0,
       usageDaysPerWeek: map['usage_days_per_week']?.toInt() ?? 7,
-      pricePerKwh: map['price_per_kwh']?.toDouble() ?? Appliance.defaultPricePerKwh,
       icon: iconData,
       createdAt: DateTime.parse(map['created_at']),
       hasCustomValues: map['has_custom_values'] == 1,
+      cachedKwhPrice: kwhPrice,
     );
+  }
+
+  // Helper pour convertir une liste avec un seul appel à getKwhPrice
+  static Future<List<Equipment>> fromMapList(List<Map<String, dynamic>> maps) async {
+    final kwhPrice = await getKwhPrice(); // Un seul appel
+
+    return maps.map((map) {
+      IconData? iconData;
+      final codePoint = map['icon_code_point'];
+      final fontFamily = map['icon_font_family'];
+      final fontPackage = map['icon_font_package'];
+
+      if (codePoint != null && fontFamily != null) {
+        iconData = IconData(
+          codePoint,
+          fontFamily: fontFamily,
+          fontPackage: fontPackage,
+        );
+      }
+
+      return Equipment(
+        id: map['id'],
+        name: map['name'],
+        roomName: map['room_name'],
+        consumptionPerHour: map['consumption_per_hour']?.toDouble() ?? 0.0,
+        usageHoursPerDay: map['usage_hours_per_day']?.toDouble() ?? 1.0,
+        usageDaysPerWeek: map['usage_days_per_week']?.toInt() ?? 7,
+        icon: iconData,
+        createdAt: DateTime.parse(map['created_at']),
+        hasCustomValues: map['has_custom_values'] == 1,
+        cachedKwhPrice: kwhPrice,
+      );
+    }).toList();
   }
 
   Equipment copyWith({
@@ -102,10 +153,10 @@ class Equipment {
       consumptionPerHour: consumptionPerHour ?? this.consumptionPerHour,
       usageHoursPerDay: usageHoursPerDay ?? this.usageHoursPerDay,
       usageDaysPerWeek: usageDaysPerWeek ?? this.usageDaysPerWeek,
-      pricePerKwh: pricePerKwh ?? this.pricePerKwh,
       icon: icon ?? this.icon,
       createdAt: createdAt ?? this.createdAt,
       hasCustomValues: hasCustomValues ?? _hasCustomValues,
+      cachedKwhPrice: _cachedKwhPrice,
     );
   }
 

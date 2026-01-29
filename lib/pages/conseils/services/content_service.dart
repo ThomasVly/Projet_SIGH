@@ -1,4 +1,3 @@
-import 'package:sqflite/sqflite.dart';
 import '../../../shared/local_database/db-creator.dart';
 import '../models/content_model.dart';
 
@@ -197,5 +196,97 @@ class ContentService {
   /// Réinitialise complètement la base de données
   Future<void> resetDatabase() async {
     await _dbHelper.resetDatabase();
+  }
+
+  /// Upsert d'un contenu à partir de son identifiant distant (Firestore).
+  ///
+  /// - Si `remoteId` est null/empty, on fallback sur un insert classique.
+  /// - Si un contenu existe déjà, on conserve ses champs "locaux"
+  ///   (hasBeenRead/isFavorite/notation) et on met à jour les champs "distants"
+  ///   (title/tags/type/category/readingTime/isFeatured/pdfUrl).
+  Future<int> upsertByRemoteId(ContentModel content) async {
+    final db = await _dbHelper.database;
+
+    final remoteId = content.remoteId;
+    if (remoteId == null || remoteId.isEmpty) {
+      return insertContent(content);
+    }
+
+    final existing = await db.query(
+      'Content',
+      where: 'remoteId = ?',
+      whereArgs: [remoteId],
+      limit: 1,
+    );
+
+    if (existing.isEmpty) {
+      return await db.insert('Content', content.toMap());
+    }
+
+    final existingRow = existing.first;
+
+    // Préserver l'état local
+    final preservedHasBeenRead = (existingRow['hasBeenRead'] ?? 0) == 1;
+    final preservedIsFavorite = (existingRow['isFavorite'] ?? 0) == 1;
+    final preservedNotation = (existingRow['notation'] as int?) ?? 0;
+
+    final updated = content.copyWith(
+      id: existingRow['id'] as int?,
+      hasBeenRead: preservedHasBeenRead,
+      isFavorite: preservedIsFavorite,
+      notation: preservedNotation,
+    );
+
+    return await db.update(
+      'Content',
+      updated.toMap(),
+      where: 'id = ?',
+      whereArgs: [updated.id],
+    );
+  }
+
+  /// Définit explicitement le favori (true/false)
+  Future<int> setFavorite(int id, bool isFavorite) async {
+    return toggleFavorite(id, isFavorite);
+  }
+
+  /// Met à jour le temps de lecture (en minutes)
+  Future<int> updateReadingTime(int id, int readingTime) async {
+    final db = await _dbHelper.database;
+    return await db.update(
+      'Content',
+      {'readingTime': readingTime},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Inverse l'état favori en base pour un contenu.
+  ///
+  /// Retourne la nouvelle valeur (true si favori après l'opération).
+  ///
+  /// Note: on lit l'état actuel en DB (source de vérité) pour éviter les désync UI.
+  Future<bool> toggleFavoriteById(int id) async {
+    final db = await _dbHelper.database;
+
+    final rows = await db.query(
+      'Content',
+      columns: ['isFavorite'],
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    final current = rows.isNotEmpty && (rows.first['isFavorite'] ?? 0) == 1;
+    final next = !current;
+
+    await db.update(
+      'Content',
+      {'isFavorite': next ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    return next;
   }
 }

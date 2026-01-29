@@ -45,6 +45,13 @@ dependencies:
   path_provider: ^2.1.1
   provider: ^6.0.5
   flutter_svg: 2.0.9
+  fl_chart: ^0.68.0
+
+
+  webview_flutter: ^4.10.0
+  youtube_player_flutter: ^9.1.1
+  url_launcher: ^6.3.1
+  share_plus: ^10.1.4
   permission_handler: ^11.1.0
 
   # Firebase
@@ -75,9 +82,11 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    # - assets/files/PDF_example.pdf
+
     - assets/images/
     - assets/images/buildings.svg
+    - assets/images/background.png
+
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
