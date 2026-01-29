@@ -137,7 +137,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Map<String, dynamic>> _pages = [
     {'page': const DefisPage(), 'title': 'Défis'},
-    {'page': const EquipmentsPage(), 'title': 'Analyse'},
+    {'page': const ConsumptionPage(), 'title': 'Analyse'},
     {'page': const HomePage(), 'title': 'Accueil'},
     {'page': const ConseilsPage(), 'title': 'Conseils'},
     {'page': const SettingsPage(), 'title': 'Paramètres'}
