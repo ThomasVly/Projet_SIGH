@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../common-widget/header/header_widget.dart';
+import '../../shared/services/onboarding_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,12 +12,21 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late ScrollController _scrollController;
   bool _isCollapsed = false;
+  String _userName = 'clara';
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final name = await OnboardingService.getUserName();
+    setState(() {
+      _userName = name;
+    });
   }
 
   void _onScroll() {
@@ -43,7 +53,7 @@ class _HomePageState extends State<HomePage> {
         slivers: [
           SliverToBoxAdapter(
             child: HeaderWidget(
-              userName: 'Clara',
+              userName: _userName,
               isHomePage: true,
               isCollapsed: _isCollapsed,
               navigationContext: context,

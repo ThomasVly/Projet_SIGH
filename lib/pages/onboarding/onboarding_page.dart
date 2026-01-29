@@ -60,16 +60,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _completeOnboarding() async {
-    if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez entrer votre prénom'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     if (!_dataConsentChecked) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -80,7 +70,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
       return;
     }
 
-    await OnboardingService.completeOnboarding(_nameController.text.trim());
+    // Utiliser "clara" par défaut si le champ est vide
+    final userName = _nameController.text.trim().isEmpty
+        ? 'clara'
+        : _nameController.text.trim();
+
+    await OnboardingService.completeOnboarding(userName);
 
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/main');
@@ -244,7 +239,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       'assets/images/buildings.svg',
                       fit: BoxFit.cover,
                       colorFilter: ColorFilter.mode(
-                        Colors.white.withValues(alpha: 0.85),
+                        Colors.white.withOpacity(0.85),
                         BlendMode.srcIn,
                       ),
                     ),
@@ -264,7 +259,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               height: 200,
               width: 200,
               decoration: BoxDecoration(
-                color: const Color(0xFF264777).withValues(alpha: 0.1),
+                color: const Color(0xFF264777).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
