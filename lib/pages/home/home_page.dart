@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../shared/local_database/db-creator.dart';
 import '../../common-widget/header/header_widget.dart';
-import '../../shared/services/onboarding_service.dart';
 import '../conseils/services/content_service.dart';
 import '../equipments/services/equipment_service.dart';
 import 'components/home_chart_widget.dart';
 import 'components/home_reminder_section.dart';
+import '../../shared/services/onboarding_service.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,15 +16,30 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late ScrollController _scrollController;
-  bool _isCollapsed = false;
+  // Services & Data
   String _userName = 'clara';
+  final ContentService _contentService = ContentService();
+  final EquipmentService _equipmentService = EquipmentService();
+  final ScrollController _scrollController = ScrollController();
+
+  // Stats pour le dashboard
+  InventoryStats _stats = InventoryStats(
+    monthlyConsumption: 0,
+    monthlyCost: 0,
+    equipmentCount: 0,
+    totalConsumption: 0,
+  );
+
+  // Liste des rappels (Simulée pour l'instant car pas de Service complet pour les rappels)
+  // Mets cette liste à vide [] pour tester l'affichage du "rectangle à la place"
+  final List<Map<String, String>> _reminders = [];
+
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
+    _loadData();
     _loadUserName();
   }
 
@@ -32,6 +48,18 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _userName = name;
     });
+  }
+
+  Widget _buildSectionDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Divider(
+        color: Colors.grey.withOpacity(0.4),
+        thickness: 1,
+        indent: 40,
+        endIndent: 40,
+      ),
+    );
   }
 
   Future<void> _loadData() async {
@@ -58,16 +86,15 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          SliverToBoxAdapter(
-            child: HeaderWidget(
-              userName: _userName,
-              isHomePage: true,
-              isCollapsed: _isCollapsed,
-              navigationContext: context,
+      // Le body est un Stack pour gérer l'image de fond fixe
+      extendBody: true,
+      body: Stack(
+        children: [
+          // 1. Image d'arrière-plan fixe
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background.png', // Assure-toi d'avoir cette image ou change le nom
+              fit: BoxFit.cover,
             ),
           ),
 
@@ -83,7 +110,7 @@ class _HomePageState extends State<HomePage> {
 
               Expanded(
                 child: SingleChildScrollView(
-                controller: _scrollController,
+                  controller: _scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
