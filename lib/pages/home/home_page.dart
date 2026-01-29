@@ -103,7 +103,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               // --- HEADER ---
               HeaderWidget(
-                userName: 'Clara',
+                userName: _userName,
                 isHomePage: true,
                 navigationContext: context,
               ),
