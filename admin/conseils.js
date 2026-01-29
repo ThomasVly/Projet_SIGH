@@ -367,6 +367,8 @@ btnTutorial.addEventListener('click', () => {
 
 btnFiche.addEventListener('click', () => {
     typeInput.value = 'fiche';
+    btnFiche.classList.add('active');
+    btnTutorial.classList.remove('active');
 });
 
 // Heating slider event listeners
