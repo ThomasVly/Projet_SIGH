@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
-import 'database_test_page.dart';
-import 'pages/badges/badges_page.dart';
 import 'pages/conseils/conseils_page.dart';
 import 'package:projet_sigh_grp1/pages/settings/models/settings_page.dart';
-import 'shared/firebase/firebase_options.dart';
 import 'pages/home/home_page.dart';
-import 'pages/conseils/conseils_page.dart';
 import 'pages/profile/profile_page.dart';
 import 'pages/notifications/notifications_history_page.dart';
 import 'common-widget/navbar/navbar_widget.dart';
 import 'common-widget/header/header_widget.dart';
 import 'shared/firebase/firebase_service.dart';
 import 'package:projet_sigh_grp1/pages/defis/defis_page.dart';
+import 'shared/navigation/route_observer.dart';
 
 
 
@@ -45,6 +42,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
+      navigatorObservers: [routeObserver],
       home: const MainNavigation(),
       routes: {
         '/profile': (context) => const ProfilePage(),
@@ -128,6 +126,3 @@ class GenericPage extends StatelessWidget {
     );
   }
 }
-
-
-

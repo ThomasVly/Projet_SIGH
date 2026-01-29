@@ -3,6 +3,9 @@ import 'models/content_model.dart';
 import 'services/content_service.dart';
 import 'content_detail_page.dart';
 import 'services/content_sync_service.dart';
+import 'conseils_settings_page.dart';
+import '../../shared/navigation/route_observer.dart';
+import 'services/conseils_preferences_service.dart';
 
 /// TODO: Fix le bug qui clear l'article à la une quand on change d'onglet puis revient.
 /// TODO: Séparer l'article à la une du tuto à la une (actuellement c'est le même pour les deux onglets).
@@ -18,10 +21,13 @@ class ConseilsPage extends StatefulWidget {
   State<ConseilsPage> createState() => _ConseilsPageState();
 }
 
-class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderStateMixin {
+class _ConseilsPageState extends State<ConseilsPage>
+    with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabController;
   final ContentService _contentService = ContentService();
   final ContentSyncService _contentSyncService = ContentSyncService();
+  final ConseilsPreferencesService _prefs = ConseilsPreferencesService();
+
   List<ContentModel> _fiches = [];
   List<ContentModel> _tutoriels = [];
   ContentModel? _featuredContent;
@@ -30,17 +36,49 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
   String? _selectedTag;
   List<String> _availableTags = [];
 
+  // Optionnel: stocker localement si tu veux conditionner l'UI/les filtres
+  String? _heatingType;
+  String? _heatingEnergy;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadData();
+    _refreshConseilsPreferences();
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void didPopNext() {
+    // Appelé quand on revient sur cette page (ex: retour depuis paramètres)
+    _refreshConseilsPreferences();
+  }
+
+  Future<void> _refreshConseilsPreferences() async {
+    final heatingType = await _prefs.getHeatingType();
+    final heatingEnergy = await _prefs.getHeatingEnergy();
+
+    if (!mounted) return;
+    setState(() {
+      _heatingType = heatingType;
+      _heatingEnergy = heatingEnergy;
+    });
   }
 
   Future<void> _syncFromFirestoreAndReload() async {
@@ -164,15 +202,19 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
     }
   }
 
-  /// Filtre les contenus selon la recherche et le tag sélectionné
+  /// Filtre les contenus selon la recherche, le tag sélectionné
+  /// et les préférences chauffage (type/énergie).
   List<ContentModel> _filterContents(List<ContentModel> contents) {
     var filtered = contents;
+
+    // Filtre par préférences chauffage
+    filtered = filtered.where(_matchesHeatingPreferences).toList();
 
     // Filtre par recherche
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((content) {
         return content.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-               content.tags.toLowerCase().contains(_searchQuery.toLowerCase());
+            content.tags.toLowerCase().contains(_searchQuery.toLowerCase());
       }).toList();
     }
 
@@ -184,6 +226,41 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
     }
 
     return filtered;
+  }
+
+  bool _matchesHeatingPreferences(ContentModel content) {
+    // Si aucune préférence n'est définie: on laisse tout passer.
+    if (_heatingType == null && _heatingEnergy == null) return true;
+
+    final tagsLower = content
+        .getTagsList()
+        .map((t) => t.toLowerCase())
+        .toList(growable: false);
+
+    // Type de chauffage: on masque l'opposé
+    // Ex: collectif => masque tout contenu taggé "chauffage individuel"
+    if (_heatingType == 'collectif') {
+      if (tagsLower.contains('chauffage individuel')) return false;
+    } else if (_heatingType == 'individuel') {
+      if (tagsLower.contains('chauffage collectif')) return false;
+    }
+
+    // Énergie de chauffage: on masque l'opposé
+    // Ex: electrique => masque "chauffage gaz" (et variantes)
+    if (_heatingEnergy == 'electrique') {
+      if (tagsLower.contains('chauffage gaz') || tagsLower.contains('gaz')) {
+        return false;
+      }
+    } else if (_heatingEnergy == 'gaz') {
+      if (tagsLower.contains('chauffage électrique') ||
+          tagsLower.contains('chauffage electrique') ||
+          tagsLower.contains('électrique') ||
+          tagsLower.contains('electrique')) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   @override
@@ -238,6 +315,19 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
               IconButton(
                 icon: const Icon(Icons.search, color: Colors.white, size: 28),
                 onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.white, size: 28),
+                tooltip: 'Paramètres des conseils',
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ConseilsSettingsPage(),
+                    ),
+                  );
+                  // Refresh immédiat au retour.
+                  await _refreshConseilsPreferences();
+                },
               ),
               // TEMP: force la sync Firestore -> SQLite
               IconButton(
