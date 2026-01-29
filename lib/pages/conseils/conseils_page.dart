@@ -39,6 +39,7 @@ class _ConseilsPageState extends State<ConseilsPage>
   // Optionnel: stocker localement si tu veux conditionner l'UI/les filtres
   String? _heatingType;
   String? _heatingEnergy;
+  bool _showOnlyFavorites = false;
 
   @override
   void didChangeDependencies() {
@@ -206,6 +207,11 @@ class _ConseilsPageState extends State<ConseilsPage>
   /// et les préférences chauffage (type/énergie).
   List<ContentModel> _filterContents(List<ContentModel> contents) {
     var filtered = contents;
+
+    // Filtre Favoris
+    if (_showOnlyFavorites) {
+      filtered = filtered.where((c) => c.isFavorite).toList();
+    }
 
     // Filtre par préférences chauffage
     filtered = filtered.where(_matchesHeatingPreferences).toList();
@@ -440,7 +446,35 @@ class _ConseilsPageState extends State<ConseilsPage>
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          _buildTagChip('Tous', null),
+          FilterChip(
+            label: const Text('Favoris'),
+            selected: _showOnlyFavorites,
+            avatar: Icon(
+              _showOnlyFavorites ? Icons.favorite : Icons.favorite_border,
+              size: 18,
+              color: _showOnlyFavorites
+                  ? const Color(0xFF003366)
+                  : Colors.grey[700],
+            ),
+            onSelected: (selected) {
+              setState(() => _showOnlyFavorites = selected);
+            },
+            backgroundColor: Colors.white,
+            selectedColor: const Color(0xFF003366).withValues(alpha: 0.15),
+            labelStyle: TextStyle(
+              color: _showOnlyFavorites
+                  ? const Color(0xFF003366)
+                  : Colors.grey[700],
+              fontWeight:
+                  _showOnlyFavorites ? FontWeight.w600 : FontWeight.normal,
+            ),
+            side: BorderSide(
+              color:
+                  _showOnlyFavorites ? const Color(0xFF003366) : Colors.grey[300]!,
+              width: _showOnlyFavorites ? 2 : 1,
+            ),
+          ),
+          const SizedBox(width: 8),
           ..._availableTags.take(10).map((tag) => _buildTagChip(tag, tag)),
         ],
       ),
@@ -662,7 +696,7 @@ class _ConseilsPageState extends State<ConseilsPage>
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
-                    // Temps de lecture et économie
+                    // Temps de lecture et économie + indicateur favori
                     Row(
                       children: [
                         Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
@@ -675,15 +709,20 @@ class _ConseilsPageState extends State<ConseilsPage>
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Icon(Icons.eco, size: 14, color: Colors.green[700]),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Économie ~${content.notation * 2}%',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
+
+                        if (content.isFavorite) ...[
+                          const SizedBox(width: 12),
+                          Icon(Icons.favorite, size: 14, color: Colors.red[400]),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Favori',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.red[400],
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ],
