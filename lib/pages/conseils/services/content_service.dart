@@ -149,6 +149,20 @@ class ContentService {
     return ContentModel.fromMap(maps[0]);
   }
 
+  /// Récupère l'article à la une pour un type donné (ex: 'fiche' ou 'tutorial').
+  Future<ContentModel?> getFeaturedContentByType(String type) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'Content',
+      where: 'isFeatured = ? AND type = ?',
+      whereArgs: [1, type],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) return null;
+    return ContentModel.fromMap(maps[0]);
+  }
+
   /// Recherche par catégorie
   Future<List<ContentModel>> getContentsByCategory(String category) async {
     final db = await _dbHelper.database;

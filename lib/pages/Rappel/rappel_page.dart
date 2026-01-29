@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'models/reminder.dart';
 import 'services/weather_service.dart';
 import '../../services/background_service.dart';
+import '../equipments/equipments_page.dart';
 
 // Couleurs du thème
 const Color kPrimaryDark = Color(0xFF003366);
@@ -1742,11 +1743,8 @@ class _RappelPageState extends State<RappelPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () {
-          // TODO: Naviguer vers la page d'inventaire
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Navigation vers l\'inventaire (à venir)'),
-            ),
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EquipmentsPage()),
           );
         },
         borderRadius: BorderRadius.circular(16),
