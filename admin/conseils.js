@@ -306,12 +306,16 @@ function resetForm() {
     heatingTypeSlider.value = 1;
     updateHeatingSliderDisplay();
     btnFiche.classList.remove('active');
+
+    // Reset reading time
+    document.getElementById('readingTime').value = 5;
 }
 
 function populateForm(conseil) {
     document.getElementById('title').value = conseil.title || '';
     document.getElementById('description').value = conseil.description || '';
     document.getElementById('tags').value = Array.isArray(conseil.tags) ? conseil.tags.join(', ') : '';
+    document.getElementById('readingTime').value = conseil.readingTime || 5;
 
     // Set type toggle
     const typeValue = conseil.type || 'tutorial';
@@ -369,10 +373,10 @@ btnFiche.addEventListener('click', () => {
 function updateHeatingSliderDisplay() {
     const energyOption = HEATING_ENERGY_OPTIONS[heatingEnergySlider.value];
     const typeOption = HEATING_TYPE_OPTIONS[heatingTypeSlider.value];
-    
+
     heatingEnergyValue.textContent = energyOption.label;
     heatingEnergyValue.className = 'slider-value ' + energyOption.class;
-    
+
     heatingTypeValue.textContent = typeOption.label;
     heatingTypeValue.className = 'slider-value ' + typeOption.class;
 }
@@ -388,17 +392,17 @@ function getHeatingTags() {
     const tags = [];
     const energyOption = HEATING_ENERGY_OPTIONS[heatingEnergySlider.value];
     const typeOption = HEATING_TYPE_OPTIONS[heatingTypeSlider.value];
-    
+
     if (energyOption.tag) tags.push(energyOption.tag);
     if (typeOption.tag) tags.push(typeOption.tag);
-    
+
     return tags;
 }
 
 // Helper function to set sliders based on existing tags
 function setHeatingSliderFromTags(tags) {
     const tagArray = Array.isArray(tags) ? tags : [];
-    
+
     // Energy slider
     if (tagArray.includes('chauffage électrique')) {
         heatingEnergySlider.value = 0;
@@ -407,7 +411,7 @@ function setHeatingSliderFromTags(tags) {
     } else {
         heatingEnergySlider.value = 1;
     }
-    
+
     // Type slider
     if (tagArray.includes('chauffage collectif')) {
         heatingTypeSlider.value = 0;
@@ -416,7 +420,7 @@ function setHeatingSliderFromTags(tags) {
     } else {
         heatingTypeSlider.value = 1;
     }
-    
+
     updateHeatingSliderDisplay();
 }
 
@@ -484,7 +488,7 @@ conseilForm.addEventListener('submit', async (e) => {
         let tags = tagsInput
             ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
             : [];
-        
+
         // Filter out existing heating tags and add new ones from sliders
         tags = filterHeatingTags(tags);
         const heatingTags = getHeatingTags();
@@ -519,7 +523,8 @@ conseilForm.addEventListener('submit', async (e) => {
             pdf: hasPdf,
             pdfUrl: pdfUrl,
             pdfFileName: pdfFileName || '',
-            tags: tags
+            tags: tags,
+            readingTime: parseInt(formData.get('readingTime')) || 5
         };
 
         if (editingId) {
