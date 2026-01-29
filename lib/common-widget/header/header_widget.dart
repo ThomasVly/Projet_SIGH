@@ -13,6 +13,8 @@ class HeaderWidget extends StatelessWidget {
   final bool isCollapsed;
   final BuildContext? navigationContext;
   final Widget? trailing;
+  final bool showBackButton;
+  final VoidCallback? onBackPressed;
 
   const HeaderWidget({
     super.key,
@@ -24,6 +26,8 @@ class HeaderWidget extends StatelessWidget {
     this.isCollapsed = false,
     this.navigationContext,
     this.trailing,
+    this.showBackButton = false,
+    this.onBackPressed,
   });
 
   @override
@@ -82,8 +86,26 @@ class HeaderWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Bouton retour (si showBackButton = true)
+              if (showBackButton)
+                GestureDetector(
+                  onTap: onBackPressed ?? () => Navigator.pop(context),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                )
               // Logo compte (profil) - seulement sur la homepage
-              if (isHomePage)
+              else if (isHomePage)
                 GestureDetector(
                   onTap: () {
                     if (navigationContext != null) {
@@ -113,7 +135,9 @@ class HeaderWidget extends StatelessWidget {
               // Texte de salutation ou titre
               Expanded(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isHomePage ? 16 : 0),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: (isHomePage || showBackButton) ? 16 : 0,
+                  ),
                   child: Text(
                     isHomePage
                         ? 'Bonjour ${userName ?? "clara"} !'
@@ -155,7 +179,7 @@ class HeaderWidget extends StatelessWidget {
                   ),
                 ),
 
-              // Onobarding
+              // Trailing widget (pour le bouton d'aide)
               if (!isHomePage && trailing != null)
                 trailing!,
             ],

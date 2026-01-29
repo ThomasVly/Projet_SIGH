@@ -80,7 +80,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
 
   void _updateTopConsumingEquipments(List<Equipment> allEquipments) {
     allEquipments.sort(
-      (a, b) => b.monthlyConsumptionKwh.compareTo(a.monthlyConsumptionKwh),
+          (a, b) => b.monthlyConsumptionKwh.compareTo(a.monthlyConsumptionKwh),
     );
 
     _topConsumingEquipments = allEquipments.take(5).toList();
@@ -179,9 +179,9 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
   }
 
   Future<void> _deleteEquipment(
-    Equipment equipment,
-    BuildContext bottomSheetContext,
-  ) async {
+      Equipment equipment,
+      BuildContext bottomSheetContext,
+      ) async {
     final confirmDelete = await showDialog<bool>(
       context: bottomSheetContext,
       builder: (context) => ConfirmDeleteDialog(
@@ -303,7 +303,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
 
   bool _isTopConsumingEquipment(Equipment equipment) {
     return _topConsumingEquipments.any(
-      (topEquipment) => topEquipment.id == equipment.id,
+          (topEquipment) => topEquipment.id == equipment.id,
     );
   }
 
@@ -354,6 +354,8 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
               HeaderWidget(
                 title: 'Inventaire des Équipements',
                 isHomePage: false,
+                showBackButton: true,
+                onBackPressed: () => Navigator.pop(context),
                 navigationContext: context,
                 trailing: IconButton(
                   icon: Container(
@@ -363,7 +365,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.help_outline,
                       color: Colors.white,
                       size: 22,
@@ -373,31 +375,6 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   tooltip: 'Voir le guide d\'utilisation',
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 2,
-                ),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context); // Retour simple
-                      // OU si tu veux forcer le retour vers ConsumptionPage :
-                      // Navigator.pushReplacement(
-                      //   context,
-                      //   MaterialPageRoute(builder: (context) => const ConsumptionPage()),
-                      // );
-                    },
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Retour'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E3A5F),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
                 ),
               ),
 
@@ -446,7 +423,7 @@ class _EquipmentsPageState extends State<EquipmentsPage> {
                                   child: Center(
                                     child: Column(
                                       mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                      MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.home_work,
