@@ -3,6 +3,9 @@ import 'models/content_model.dart';
 import 'services/content_service.dart';
 import 'content_detail_page.dart';
 import 'services/content_sync_service.dart';
+import 'conseils_settings_page.dart';
+import '../../shared/navigation/route_observer.dart';
+import 'services/conseils_preferences_service.dart';
 
 /// TODO: Fix le bug qui clear l'article à la une quand on change d'onglet puis revient.
 /// TODO: Séparer l'article à la une du tuto à la une (actuellement c'est le même pour les deux onglets).
@@ -18,29 +21,78 @@ class ConseilsPage extends StatefulWidget {
   State<ConseilsPage> createState() => _ConseilsPageState();
 }
 
-class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderStateMixin {
+class _ConseilsPageState extends State<ConseilsPage>
+    with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabController;
   final ContentService _contentService = ContentService();
   final ContentSyncService _contentSyncService = ContentSyncService();
+  final ConseilsPreferencesService _prefs = ConseilsPreferencesService();
+
   List<ContentModel> _fiches = [];
   List<ContentModel> _tutoriels = [];
-  ContentModel? _featuredContent;
+  ContentModel? _featuredFiche;
+  ContentModel? _featuredTutoriel;
   bool _isLoading = true;
-  String _searchQuery = '';
-  String? _selectedTag;
+
+  // Filtres Fiches
+  String _searchQueryFiches = '';
+  String? _selectedTagFiches;
+
+  // Filtres Tutoriels
+  String _searchQueryTutoriels = '';
+  String? _selectedTagTutoriels;
+
   List<String> _availableTags = [];
+
+  // Optionnel: stocker localement si tu veux conditionner l'UI/les filtres
+  String? _heatingType;
+  String? _heatingEnergy;
+  bool _showOnlyFavorites = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      // Fix: force un rebuild quand on change d'onglet pour éviter les états "fantômes"
+      // (ex: featured qui disparaît quand on revient).
+      if (mounted) setState(() {});
+    });
     _loadData();
+    _refreshConseilsPreferences();
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void didPopNext() {
+    // Appelé quand on revient sur cette page (ex: retour depuis paramètres)
+    _refreshConseilsPreferences();
+  }
+
+  Future<void> _refreshConseilsPreferences() async {
+    final heatingType = await _prefs.getHeatingType();
+    final heatingEnergy = await _prefs.getHeatingEnergy();
+
+    if (!mounted) return;
+    setState(() {
+      _heatingType = heatingType;
+      _heatingEnergy = heatingEnergy;
+    });
   }
 
   Future<void> _syncFromFirestoreAndReload() async {
@@ -52,13 +104,15 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
       // Recharger depuis SQLite
       final fiches = await _contentService.getContentsByType('fiche');
       final tutoriels = await _contentService.getContentsByType('tutorial');
-      final featured = await _contentService.getFeaturedContent();
+      final featuredFiche = await _contentService.getFeaturedContentByType('fiche');
+      final featuredTutoriel = await _contentService.getFeaturedContentByType('tutorial');
       final tags = await _contentService.getAllTags();
 
       setState(() {
         _fiches = fiches;
         _tutoriels = tutoriels;
-        _featuredContent = featured;
+        _featuredFiche = featuredFiche;
+        _featuredTutoriel = featuredTutoriel;
         _availableTags = tags;
         _isLoading = false;
       });
@@ -87,13 +141,15 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
       // 2) Charger les fiches et tutoriels depuis SQLite
       final fiches = await _contentService.getContentsByType('fiche');
       final tutoriels = await _contentService.getContentsByType('tutorial');
-      final featured = await _contentService.getFeaturedContent();
+      final featuredFiche = await _contentService.getFeaturedContentByType('fiche');
+      final featuredTutoriel = await _contentService.getFeaturedContentByType('tutorial');
       final tags = await _contentService.getAllTags();
 
       setState(() {
         _fiches = fiches;
         _tutoriels = tutoriels;
-        _featuredContent = featured;
+        _featuredFiche = featuredFiche;
+        _featuredTutoriel = featuredTutoriel;
         _availableTags = tags;
         _isLoading = false;
       });
@@ -107,13 +163,15 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
 
         final fiches = await _contentService.getContentsByType('fiche');
         final tutoriels = await _contentService.getContentsByType('tutorial');
-        final featured = await _contentService.getFeaturedContent();
+        final featuredFiche = await _contentService.getFeaturedContentByType('fiche');
+        final featuredTutoriel = await _contentService.getFeaturedContentByType('tutorial');
         final tags = await _contentService.getAllTags();
 
         setState(() {
           _fiches = fiches;
           _tutoriels = tutoriels;
-          _featuredContent = featured;
+          _featuredFiche = featuredFiche;
+          _featuredTutoriel = featuredTutoriel;
           _availableTags = tags;
           _isLoading = false;
         });
@@ -123,13 +181,15 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
 
         final fiches = await _contentService.getContentsByType('fiche');
         final tutoriels = await _contentService.getContentsByType('tutorial');
-        final featured = await _contentService.getFeaturedContent();
+        final featuredFiche = await _contentService.getFeaturedContentByType('fiche');
+        final featuredTutoriel = await _contentService.getFeaturedContentByType('tutorial');
         final tags = await _contentService.getAllTags();
 
         setState(() {
           _fiches = fiches;
           _tutoriels = tutoriels;
-          _featuredContent = featured;
+          _featuredFiche = featuredFiche;
+          _featuredTutoriel = featuredTutoriel;
           _availableTags = tags;
           _isLoading = false;
         });
@@ -164,51 +224,122 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
     }
   }
 
-  /// Filtre les contenus selon la recherche et le tag sélectionné
-  List<ContentModel> _filterContents(List<ContentModel> contents) {
+  /// Filtre les contenus selon la recherche, le tag sélectionné
+  /// et les préférences chauffage (type/énergie).
+  List<ContentModel> _filterContents(
+    List<ContentModel> contents, {
+    required String searchQuery,
+    required String? selectedTag,
+  }) {
     var filtered = contents;
 
+    // Filtre Favoris
+    if (_showOnlyFavorites) {
+      filtered = filtered.where((c) => c.isFavorite).toList();
+    }
+
+    // Filtre par préférences chauffage
+    filtered = filtered.where(_matchesHeatingPreferences).toList();
+
     // Filtre par recherche
-    if (_searchQuery.isNotEmpty) {
+    if (searchQuery.isNotEmpty) {
       filtered = filtered.where((content) {
-        return content.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-               content.tags.toLowerCase().contains(_searchQuery.toLowerCase());
+        return content.title.toLowerCase().contains(searchQuery.toLowerCase()) ||
+            content.tags.toLowerCase().contains(searchQuery.toLowerCase());
       }).toList();
     }
 
     // Filtre par tag
-    if (_selectedTag != null) {
+    if (selectedTag != null) {
       filtered = filtered.where((content) {
-        return content.getTagsList().contains(_selectedTag);
+        return content.getTagsList().contains(selectedTag);
       }).toList();
     }
 
     return filtered;
   }
 
+  bool _matchesHeatingPreferences(ContentModel content) {
+    // Si aucune préférence n'est définie: on laisse tout passer.
+    if (_heatingType == null && _heatingEnergy == null) return true;
+
+    final tagsLower = content
+        .getTagsList()
+        .map((t) => t.toLowerCase())
+        .toList(growable: false);
+
+    // Type de chauffage: on masque l'opposé
+    // Ex: collectif => masque tout contenu taggé "chauffage individuel"
+    if (_heatingType == 'collectif') {
+      if (tagsLower.contains('chauffage individuel')) return false;
+    } else if (_heatingType == 'individuel') {
+      if (tagsLower.contains('chauffage collectif')) return false;
+    }
+
+    // Énergie de chauffage: on masque l'opposé
+    // Ex: electrique => masque "chauffage gaz" (et variantes)
+    if (_heatingEnergy == 'electrique') {
+      if (tagsLower.contains('chauffage gaz') || tagsLower.contains('gaz')) {
+        return false;
+      }
+    } else if (_heatingEnergy == 'gaz') {
+      if (tagsLower.contains('chauffage électrique') ||
+          tagsLower.contains('chauffage electrique') ||
+          tagsLower.contains('électrique') ||
+          tagsLower.contains('electrique')) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isFichesTab = _tabController.index == 0;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF003366)))
           : Column(
               children: [
-                // Header bleu foncé avec titre "Conseils" uniquement
                 _buildHeader(
                   onTempResetDbPressed: _resetDbAndReload,
                 ),
-                // Onglets Fiches infos / Tutoriels
                 _buildTabs(),
-                // Barre de recherche (sous les onglets)
-                _buildSearchBar(),
-                // Contenu avec onglets
+                _buildSearchBar(
+                  query: isFichesTab ? _searchQueryFiches : _searchQueryTutoriels,
+                  onChanged: (value) {
+                    setState(() {
+                      if (isFichesTab) {
+                        _searchQueryFiches = value;
+                      } else {
+                        _searchQueryTutoriels = value;
+                      }
+                    });
+                  },
+                ),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildTabContent(_filterContents(_fiches)),
-                      _buildTabContent(_filterContents(_tutoriels)),
+                      _buildTabContent(
+                        _filterContents(
+                          _fiches,
+                          searchQuery: _searchQueryFiches,
+                          selectedTag: _selectedTagFiches,
+                        ),
+                        featured: _featuredFiche,
+                      ),
+                      _buildTabContent(
+                        _filterContents(
+                          _tutoriels,
+                          searchQuery: _searchQueryTutoriels,
+                          selectedTag: _selectedTagTutoriels,
+                        ),
+                        featured: _featuredTutoriel,
+                      ),
                     ],
                   ),
                 ),
@@ -238,6 +369,19 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
               IconButton(
                 icon: const Icon(Icons.search, color: Colors.white, size: 28),
                 onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.white, size: 28),
+                tooltip: 'Paramètres des conseils',
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ConseilsSettingsPage(),
+                    ),
+                  );
+                  // Refresh immédiat au retour.
+                  await _refreshConseilsPreferences();
+                },
               ),
               // TEMP: force la sync Firestore -> SQLite
               IconButton(
@@ -276,7 +420,10 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
   }
 
   /// Construit la barre de recherche (sous les onglets)
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar({
+    required String query,
+    required ValueChanged<String> onChanged,
+  }) {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -287,9 +434,7 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
           border: Border.all(color: Colors.grey[300]!),
         ),
         child: TextField(
-          onChanged: (value) {
-            setState(() => _searchQuery = value);
-          },
+          onChanged: onChanged,
           decoration: InputDecoration(
             hintText: 'Rechercher un conseil...',
             hintStyle: TextStyle(color: Colors.grey[400]),
@@ -303,19 +448,26 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
   }
 
   /// Construit le contenu d'un onglet
-  Widget _buildTabContent(List<ContentModel> contents) {
+  Widget _buildTabContent(List<ContentModel> contents, {ContentModel? featured}) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tags de recherche
-          _buildTagsRow(),
+          _buildTagsRow(
+            selectedTag: _tabController.index == 0 ? _selectedTagFiches : _selectedTagTutoriels,
+            onTagSelected: (tag) {
+              setState(() {
+                if (_tabController.index == 0) {
+                  _selectedTagFiches = tag;
+                } else {
+                  _selectedTagTutoriels = tag;
+                }
+              });
+            },
+          ),
 
-          // Article à la une (uniquement dans Fiches infos)
-          if (_tabController.index == 0 && _featuredContent != null)
-            _buildFeaturedArticle(_featuredContent!),
+          if (featured != null) _buildFeaturedArticle(featured),
 
-          // Liste des articles
           if (contents.isEmpty)
             const Padding(
               padding: EdgeInsets.all(32),
@@ -342,7 +494,10 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
   }
 
   /// Construit la rangée de tags
-  Widget _buildTagsRow() {
+  Widget _buildTagsRow({
+    required String? selectedTag,
+    required ValueChanged<String?> onTagSelected,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       height: 60,
@@ -350,47 +505,73 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          _buildTagChip('Tous', null),
-          ..._availableTags.take(10).map((tag) => _buildTagChip(tag, tag)),
+          FilterChip(
+            label: const Text('Favoris'),
+            selected: _showOnlyFavorites,
+            avatar: Icon(
+              _showOnlyFavorites ? Icons.favorite : Icons.favorite_border,
+              size: 18,
+              color: _showOnlyFavorites
+                  ? const Color(0xFF003366)
+                  : Colors.grey[700],
+            ),
+            onSelected: (selected) {
+              setState(() => _showOnlyFavorites = selected);
+            },
+            backgroundColor: Colors.white,
+            selectedColor: const Color(0xFF003366).withValues(alpha: 0.15),
+            labelStyle: TextStyle(
+              color: _showOnlyFavorites
+                  ? const Color(0xFF003366)
+                  : Colors.grey[700],
+              fontWeight:
+                  _showOnlyFavorites ? FontWeight.w600 : FontWeight.normal,
+            ),
+            side: BorderSide(
+              color:
+                  _showOnlyFavorites ? const Color(0xFF003366) : Colors.grey[300]!,
+              width: _showOnlyFavorites ? 2 : 1,
+            ),
+          ),
+          const SizedBox(width: 8),
+          ..._availableTags.take(10).map((tag) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_getTagIcon(tag) != null) ...[
+                      Text(_getTagIcon(tag)!, style: const TextStyle(fontSize: 16)),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(tag),
+                  ],
+                ),
+                selected: selectedTag == tag,
+                onSelected: (selected) {
+                  onTagSelected(selected ? tag : null);
+                },
+                backgroundColor: Colors.white,
+                selectedColor: const Color(0xFF003366).withValues(alpha: 0.15),
+                labelStyle: TextStyle(
+                  color: selectedTag == tag
+                      ? const Color(0xFF003366)
+                      : Colors.grey[700],
+                  fontWeight: selectedTag == tag
+                      ? FontWeight.w600
+                      : FontWeight.normal,
+                ),
+                side: BorderSide(
+                  color: selectedTag == tag
+                      ? const Color(0xFF003366)
+                      : Colors.grey[300]!,
+                  width: selectedTag == tag ? 2 : 1,
+                ),
+              ),
+            );
+          }),
         ],
-      ),
-    );
-  }
-
-  /// Construit un chip de tag
-  Widget _buildTagChip(String label, String? tagValue) {
-    final isSelected = _selectedTag == tagValue;
-    final icon = _getTagIcon(label);
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Text(icon, style: const TextStyle(fontSize: 16)),
-              const SizedBox(width: 4),
-            ],
-            Text(label),
-          ],
-        ),
-        selected: isSelected,
-        onSelected: (selected) {
-          setState(() {
-            _selectedTag = selected ? tagValue : null;
-          });
-        },
-        backgroundColor: Colors.white,
-        selectedColor: const Color(0xFF003366).withValues(alpha: 0.15),
-        labelStyle: TextStyle(
-          color: isSelected ? const Color(0xFF003366) : Colors.grey[700],
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        ),
-        side: BorderSide(
-          color: isSelected ? const Color(0xFF003366) : Colors.grey[300]!,
-          width: isSelected ? 2 : 1,
-        ),
       ),
     );
   }
@@ -572,28 +753,31 @@ class _ConseilsPageState extends State<ConseilsPage> with SingleTickerProviderSt
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
-                    // Temps de lecture et économie
+                    // Temps de lecture et économie + indicateur favori
                     Row(
                       children: [
                         Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
                         const SizedBox(width: 4),
                         Text(
-                          '${content.readingTime} min',
+                          'Temps de lecture : ${content.readingTime} min',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Icon(Icons.eco, size: 14, color: Colors.green[700]),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Économie ~${content.notation * 2}%',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
+                        if (content.isFavorite) ...[
+                          const SizedBox(width: 12),
+                          Icon(Icons.favorite, size: 14, color: Colors.red[400]),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Favori',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.red[400],
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ],
