@@ -296,10 +296,15 @@ class _PrivacyPageState extends State<PrivacyPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
+        top:false,
         child: Column(
           children: [
             HeaderWidget(
               title: 'Confidentialité & Données',
+              showBackButton: true,
+              onBackPressed: (){
+                Navigator.pop(context);
+              },
               isHomePage: false,
               navigationContext: context,
             ),
