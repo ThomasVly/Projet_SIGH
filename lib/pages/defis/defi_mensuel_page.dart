@@ -137,45 +137,20 @@ class _DefiMensuelPageState extends State<DefiMensuelPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FB),
       body: SafeArea(
+        top:false,
         child: Column(
           children: [
             
             Stack(
               children: [
                 // Header : on garde juste le fond, sans titre
-                const HeaderWidget(
-                  title: '',
+                HeaderWidget(
+                  title: 'Défi mensuel',
+                  showBackButton: true,
+                  onBackPressed: (){
+                    Navigator.pop(context);
+                  },
                   isHomePage: false,
-                ),
-
-                // Flèche + titre alignés comme dans un AppBar
-                Positioned(
-                  left: 8,
-                  top: 0,
-                  bottom: 0, // permet de centrer verticalement dans le header
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'Défi mensuel',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18, // même taille que le header
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),

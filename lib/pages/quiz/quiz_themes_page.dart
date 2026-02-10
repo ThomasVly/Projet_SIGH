@@ -62,28 +62,19 @@ class _QuizThemesPageState extends State<QuizThemesPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
+        top:false,
         child: Column(
           children: [
             // Header avec bouton retour intégré
             Stack(
               children: [
-                const HeaderWidget(
+                HeaderWidget(
                   title: 'Quiz',
+                  showBackButton: true,
+                  onBackPressed: (){
+                    Navigator.pop(context);
+                  },
                   isHomePage: false,
-                ),
-                Positioned(
-                  left: -5,
-                  top: -80,
-                  bottom: 0,
-                  child: Center(
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
-                      onPressed: () => Navigator.pop(context),
-                      tooltip: 'Retour',
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      constraints: const BoxConstraints(),
-                    ),
-                  ),
                 ),
               ],
             ),
