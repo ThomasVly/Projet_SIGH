@@ -248,7 +248,12 @@ class _ProfilePageState extends State<ProfilePage> {
               onTap: (index) {
                 // Navigation vers les autres pages
                 if (index != 4) {
-                  Navigator.pop(context);
+                  // Retourner à MainNavigation avec l'index approprié
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/main',
+                    (route) => false,
+                    arguments: index,
+                  );
                 }
               },
             ),

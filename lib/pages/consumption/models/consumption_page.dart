@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:projet_sigh_grp1/common-widget/header/header_widget.dart';
 import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
@@ -775,6 +777,7 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
       consumptionData[key] = consumption;
       kwhPricePerMonth[key] = pricePerKwh;
     });
+    await _saveConsumptionData();
 
     await _saveConsumptionData();
     await _saveKwhPricesPerMonth();

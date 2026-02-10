@@ -243,13 +243,6 @@ class _ContentDetailPageState extends State<ContentDetailPage> {
                 '${_content.readingTime} min de lecture',
                 style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
-              const SizedBox(width: 20),
-              const Icon(Icons.eco, color: Colors.white70, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                'Économie ~${_content.notation * 2}%',
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
-              ),
             ],
           ),
 
