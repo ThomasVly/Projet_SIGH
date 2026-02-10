@@ -144,12 +144,33 @@ class ContentSyncService {
 
   ///TODO: Améliorer en fonction des besoins réels.
   String _deriveCategory(String? description, String tagsCsv, String title) {
+    // Nouvelle règle (simple et explicite):
+    // - Si on a au moins 1 tag, la catégorie devient le 1er tag.
+    //   -> permet d'avoir "ADEME" ou "Économie" comme catégories.
+    // - Sinon, on garde le fallback historique basé sur des mots-clés.
+    final tags = tagsCsv
+        .split(',')
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .toList(growable: false);
+
+    if (tags.isNotEmpty) {
+      final firstTagLower = tags.first.toLowerCase();
+      if (firstTagLower == 'ademe' ||
+          firstTagLower == 'économie' ||
+          firstTagLower == 'economie') {
+        return tags.first;
+      }
+    }
+
     final source = '${description ?? ''},$tagsCsv,$title'.toLowerCase();
 
     if (source.contains('chauffage') || source.contains('radiateur')) return 'Chauffage';
     if (source.contains('lavage') || source.contains('lave')) return 'Lavage';
     if (source.contains('electrom') || source.contains('électrom')) return 'Électroménager';
-    if (source.contains('électric') || source.contains('electric') || source.contains('éclairage')) {
+    if (source.contains('électric') ||
+        source.contains('electric') ||
+        source.contains('éclairage')) {
       return 'Électricité';
     }
 

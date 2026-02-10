@@ -7,11 +7,6 @@ import 'conseils_settings_page.dart';
 import '../../shared/navigation/route_observer.dart';
 import 'services/conseils_preferences_service.dart';
 
-/// TODO: Fix le bug qui clear l'article à la une quand on change d'onglet puis revient.
-/// TODO: Séparer l'article à la une du tuto à la une (actuellement c'est le même pour les deux onglets).
-/// TODO: Séparer les filtres des articles des filtres des tutoriels (actuellement c'est le même pour les deux onglets).
-/// TODO: Changer l'affichage rose gris bizarre des cadres.
-///
 
 /// Page des conseils avec onglets Fiches infos et Tutoriels
 class ConseilsPage extends StatefulWidget {
@@ -43,6 +38,8 @@ class _ConseilsPageState extends State<ConseilsPage>
   String? _selectedTagTutoriels;
 
   List<String> _availableTags = [];
+  List<String> _availableTagsFiches = [];
+  List<String> _availableTagsTutoriels = [];
 
   // Optionnel: stocker localement si tu veux conditionner l'UI/les filtres
   String? _heatingType;
@@ -107,6 +104,8 @@ class _ConseilsPageState extends State<ConseilsPage>
       final featuredFiche = await _contentService.getFeaturedContentByType('fiche');
       final featuredTutoriel = await _contentService.getFeaturedContentByType('tutorial');
       final tags = await _contentService.getAllTags();
+      final tagsFiches = await _contentService.getAllTagsByType('fiche');
+      final tagsTutoriels = await _contentService.getAllTagsByType('tutorial');
 
       setState(() {
         _fiches = fiches;
@@ -114,6 +113,8 @@ class _ConseilsPageState extends State<ConseilsPage>
         _featuredFiche = featuredFiche;
         _featuredTutoriel = featuredTutoriel;
         _availableTags = tags;
+        _availableTagsFiches = tagsFiches;
+        _availableTagsTutoriels = tagsTutoriels;
         _isLoading = false;
       });
 
@@ -144,6 +145,8 @@ class _ConseilsPageState extends State<ConseilsPage>
       final featuredFiche = await _contentService.getFeaturedContentByType('fiche');
       final featuredTutoriel = await _contentService.getFeaturedContentByType('tutorial');
       final tags = await _contentService.getAllTags();
+      final tagsFiches = await _contentService.getAllTagsByType('fiche');
+      final tagsTutoriels = await _contentService.getAllTagsByType('tutorial');
 
       setState(() {
         _fiches = fiches;
@@ -151,6 +154,8 @@ class _ConseilsPageState extends State<ConseilsPage>
         _featuredFiche = featuredFiche;
         _featuredTutoriel = featuredTutoriel;
         _availableTags = tags;
+        _availableTagsFiches = tagsFiches;
+        _availableTagsTutoriels = tagsTutoriels;
         _isLoading = false;
       });
     } catch (e) {
@@ -166,6 +171,8 @@ class _ConseilsPageState extends State<ConseilsPage>
         final featuredFiche = await _contentService.getFeaturedContentByType('fiche');
         final featuredTutoriel = await _contentService.getFeaturedContentByType('tutorial');
         final tags = await _contentService.getAllTags();
+        final tagsFiches = await _contentService.getAllTagsByType('fiche');
+        final tagsTutoriels = await _contentService.getAllTagsByType('tutorial');
 
         setState(() {
           _fiches = fiches;
@@ -173,6 +180,8 @@ class _ConseilsPageState extends State<ConseilsPage>
           _featuredFiche = featuredFiche;
           _featuredTutoriel = featuredTutoriel;
           _availableTags = tags;
+          _availableTagsFiches = tagsFiches;
+          _availableTagsTutoriels = tagsTutoriels;
           _isLoading = false;
         });
       } else {
@@ -184,6 +193,8 @@ class _ConseilsPageState extends State<ConseilsPage>
         final featuredFiche = await _contentService.getFeaturedContentByType('fiche');
         final featuredTutoriel = await _contentService.getFeaturedContentByType('tutorial');
         final tags = await _contentService.getAllTags();
+        final tagsFiches = await _contentService.getAllTagsByType('fiche');
+        final tagsTutoriels = await _contentService.getAllTagsByType('tutorial');
 
         setState(() {
           _fiches = fiches;
@@ -191,6 +202,8 @@ class _ConseilsPageState extends State<ConseilsPage>
           _featuredFiche = featuredFiche;
           _featuredTutoriel = featuredTutoriel;
           _availableTags = tags;
+          _availableTagsFiches = tagsFiches;
+          _availableTagsTutoriels = tagsTutoriels;
           _isLoading = false;
         });
 
@@ -239,7 +252,7 @@ class _ConseilsPageState extends State<ConseilsPage>
     }
 
     // Filtre par préférences chauffage
-    filtered = filtered.where(_matchesHeatingPreferences).toList();
+    filtered =  filtered.where(_matchesHeatingPreferences).toList();
 
     // Filtre par recherche
     if (searchQuery.isNotEmpty) {
@@ -366,10 +379,6 @@ class _ConseilsPageState extends State<ConseilsPage>
           ),
           Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.search, color: Colors.white, size: 28),
-                onPressed: () {},
-              ),
               IconButton(
                 icon: const Icon(Icons.settings, color: Colors.white, size: 28),
                 tooltip: 'Paramètres des conseils',
@@ -498,6 +507,9 @@ class _ConseilsPageState extends State<ConseilsPage>
     required String? selectedTag,
     required ValueChanged<String?> onTagSelected,
   }) {
+    final isFichesTab = _tabController.index == 0;
+    final availableTagsForTab = isFichesTab ? _availableTagsFiches : _availableTagsTutoriels;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       height: 60,
@@ -534,7 +546,7 @@ class _ConseilsPageState extends State<ConseilsPage>
             ),
           ),
           const SizedBox(width: 8),
-          ..._availableTags.take(10).map((tag) {
+          ...availableTagsForTab.take(10).map((tag) {
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
@@ -578,9 +590,16 @@ class _ConseilsPageState extends State<ConseilsPage>
 
   /// Retourne l'icône pour un tag
   String? _getTagIcon(String tag) {
+    // Priorité (du plus fort au plus faible):
+    // 1) ADEME => toujours 🏛️, même s'il y a d'autres mots-clés.
+    // 2) Économie => 💰, sans écraser ADEME.
+    // 3) Autres correspondances.
     final tagLower = tag.toLowerCase();
+
+    if (tagLower.contains('ademe')) return '🏛️';
+    if (tagLower.contains('économie') || tagLower.contains('economie')) return '💰';
+
     if (tagLower.contains('chauffage')) return '🔥';
-    if (tagLower.contains('économie')) return '💰';
     if (tagLower.contains('électric') || tagLower.contains('electric')) return '💡';
     if (tagLower.contains('éclairage')) return '💡';
     return null;
