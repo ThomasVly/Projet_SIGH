@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../common-widget/header/header_widget.dart';
+import '../../shared/services/onboarding_service.dart';
 import '../Rappel/rappel_page.dart';
+import '../conseils/services/content_service.dart';
 import '../equipments/services/equipment_service.dart';
 import 'components/home_chart_widget_SHARED.dart';
 import 'components/home_reminder_section_PRIORITY.dart';
@@ -20,6 +22,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // Services & Data
+  String _userName = 'clara';
+  final ContentService _contentService = ContentService();
   final EquipmentService _equipmentService = EquipmentService();
   final ScrollController _scrollController = ScrollController();
 
