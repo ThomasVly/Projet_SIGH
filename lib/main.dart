@@ -53,7 +53,11 @@ class MyApp extends StatelessWidget {
       home: const AppInitializer(),
       routes: {
         '/onboarding': (context) => const OnboardingPage(),
-        '/main': (context) => const MainNavigation(),
+        '/main': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final initialIndex = args is int ? args : 2;
+          return MainNavigation(initialIndex: initialIndex);
+        },
         '/profile': (context) => const ProfilePage(),
         '/notifications': (context) => const NotificationsHistoryPage(),
       },
@@ -124,14 +128,22 @@ class _AppInitializerState extends State<AppInitializer> {
 }
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final int initialIndex;
+
+  const MainNavigation({super.key, this.initialIndex = 2});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 2; // Démarrer sur la page Accueil
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex; // Utiliser l'index passé en paramètre
+  }
 
   final List<Map<String, dynamic>> _pages = [
     {'page': const DefisPage(), 'title': 'Défis'},
