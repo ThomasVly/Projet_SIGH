@@ -207,6 +207,31 @@ class ContentService {
     return tagsSet.toList()..sort();
   }
 
+  /// Récupère tous les tags uniques uniquement pour un type de contenu.
+  ///
+  /// Exemple: type='fiche' => uniquement les tags présents dans les fiches.
+  Future<List<String>> getAllTagsByType(String type) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'Content',
+      columns: const ['tags'],
+      where: 'type = ?',
+      whereArgs: [type],
+    );
+
+    final Set<String> tagsSet = {};
+    for (final map in maps) {
+      final raw = (map['tags'] as String?) ?? '';
+      if (raw.trim().isEmpty) continue;
+      for (final tag in raw.split(',')) {
+        final t = tag.trim();
+        if (t.isNotEmpty) tagsSet.add(t);
+      }
+    }
+
+    return tagsSet.toList()..sort();
+  }
+
   /// Réinitialise complètement la base de données
   Future<void> resetDatabase() async {
     await _dbHelper.resetDatabase();
