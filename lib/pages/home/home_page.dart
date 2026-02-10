@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../shared/local_database/db-creator.dart';
 import '../../common-widget/header/header_widget.dart';
-import '../conseils/services/content_service.dart';
+import '../Rappel/rappel_page.dart';
 import '../equipments/services/equipment_service.dart';
-import 'components/home_chart_widget.dart';
-import 'components/home_reminder_section.dart';
+import 'components/home_chart_widget_SHARED.dart';
+import 'components/home_reminder_section_PRIORITY.dart';
+import '../defis/models/challenge_models.dart';
+import '../../shared/firebase/firestore_service.dart';
+import '../defis/defi_mensuel_page.dart';
+import '../Rappel/models/reminder.dart';
+import 'dart:convert'; // Pour jsonDecode
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,9 +20,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // Services & Data
-  final ContentService _contentService = ContentService();
   final EquipmentService _equipmentService = EquipmentService();
   final ScrollController _scrollController = ScrollController();
+
 
   // Stats pour le dashboard
   InventoryStats _stats = InventoryStats(
@@ -27,9 +32,14 @@ class _HomePageState extends State<HomePage> {
     totalConsumption: 0,
   );
 
+  ChallengeDefinition? _monthlyChallenge; // Stocke le défi récupéré
+  bool _isLoadingChallenge = true;        // Gère l'état de chargement
+
   // Liste des rappels (Simulée pour l'instant car pas de Service complet pour les rappels)
   // Mets cette liste à vide [] pour tester l'affichage du "rectangle à la place"
-  final List<Map<String, String>> _reminders = [];
+
+  // Variables pour les rappels
+  List<Reminder> _reminders = [];
 
   bool _isLoading = true;
 
@@ -55,12 +65,59 @@ class _HomePageState extends State<HomePage> {
     // 1. Récupérer les vraies stats de consommation
     final stats = await _equipmentService.getInventoryStats();
 
-    // 2. (Optionnel) Ici tu pourrais charger les vrais rappels depuis la BDD
-    // final reminders = await ...
+    // 2. Rappels (Depuis shared preferencies)
+    List<Reminder> loadedReminders = [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? remindersJson = prefs.getString('reminders');
 
+      if (remindersJson != null && remindersJson.isNotEmpty) {
+        // On décode le JSON (String -> List<dynamic>)
+        final List<dynamic> decodedList = jsonDecode(remindersJson);
+
+        // On convertit chaque élément en objet Reminder
+        loadedReminders = decodedList
+            .map((json) => Reminder.fromJson(json))
+            .toList();
+
+        // Optionnel : Trier par heure (scheduledTime)
+        loadedReminders.sort((a, b) {
+          if (a.scheduledTime == null) return 1;
+          if (b.scheduledTime == null) return -1;
+          return a.scheduledTime!.compareTo(b.scheduledTime!);
+        });
+      }
+    } catch (e) {
+      debugPrint("Erreur chargement rappels SharedPreferences: $e");
+    }
+    // 3. Défi du mois (Depuis Firestore)
+    ChallengeDefinition? challengeFound;
+    try {
+      // On utilise exactement la même méthode que DefiMensuelPage
+      final rawList = await FirestoreService.getChallenges();
+
+      // Conversion en objets
+      final definitions = rawList.map((data) {
+        return ChallengeDefinition.fromFirestore(data, data['id'] as String);
+      }).toList();
+
+      if (definitions.isNotEmpty) {
+        // On cherche le défi du mois courant (isCurrent == true)
+        // Sinon on prend le premier de la liste par défaut
+        challengeFound = definitions.firstWhere(
+              (def) => def.isCurrent,
+          orElse: () => definitions.first,
+        );
+      }
+    } catch (e) {
+      debugPrint('Erreur chargement défi home: $e');
+    }
     if (mounted) {
       setState(() {
         _stats = stats;
+        _reminders = loadedReminders;
+        _monthlyChallenge = challengeFound;
+        _isLoadingChallenge = false;
         _isLoading = false;
       });
     }
@@ -82,7 +139,7 @@ class _HomePageState extends State<HomePage> {
           // 1. Image d'arrière-plan fixe
           Positioned.fill(
             child: Image.asset(
-              'assets/images/background.png', // Assure-toi d'avoir cette image ou change le nom
+              'assets/images/background.png',
               fit: BoxFit.cover,
             ),
           ),
@@ -122,8 +179,16 @@ class _HomePageState extends State<HomePage> {
                       _buildSectionDivider(),
                       const SizedBox(height: 12),
 
-                      // --- SECTION 2: RAPPELS ou ENCART ALTERNATIF ---
-                      const HomeReminderSection(),
+                      // --- SECTION 2: RAPPELS
+                      HomeReminderSection(reminders: _reminders,
+                        onSettingsTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const RappelPage()),
+                          );
+                          _loadData(); // ✅ Recharge les données
+                        },
+                      ),
                       _buildSectionDivider(),
                       const SizedBox(height: 32),
 
@@ -154,18 +219,37 @@ class _HomePageState extends State<HomePage> {
 
   /// Carte du Défi du mois
   Widget _buildMonthlyChallengeCard() {
+    if (_isLoadingChallenge) {
+      return const SizedBox(
+          height: 100,
+          child: Center(child: CircularProgressIndicator())
+      );
+    }
+
+    // Cas où aucun défi n'est trouvé
+    if (_monthlyChallenge == null) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(child: Text("Aucun défi disponible pour ce mois.")),
+      );
+    }
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF72BA00), Color(0xFF5E9A00)], // Vert énergie
+          colors: [Color(0xFF264777), Color(0xFF264777)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF72BA00).withOpacity(0.3),
+            color: const Color(0xFF264777).withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -175,26 +259,17 @@ class _HomePageState extends State<HomePage> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            // Navigation vers la page défis
-            // Navigator.push(...);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DefiMensuelPage()),
+            );
           },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                // Illustration ou Icône
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Text(
-                    '🏆',
-                    style: TextStyle(fontSize: 32),
-                  ),
-                ),
+
                 const SizedBox(width: 16),
 
                 // Textes
@@ -202,9 +277,10 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Objectif -10%',
-                        style: TextStyle(
+
+                      Text(
+                        _monthlyChallenge!.title,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
@@ -212,24 +288,17 @@ class _HomePageState extends State<HomePage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Réduisez votre conso de chauffage ce mois-ci pour gagner le badge "Polaire" !',
+                        _monthlyChallenge!.description, // Description dynamique
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.9),
                           fontSize: 13,
                         ),
                       ),
+
                       const SizedBox(height: 12),
 
-                      // Barre de progression simulée
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: 0.65, // 65%
-                          backgroundColor: Colors.black.withOpacity(0.1),
-                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                          minHeight: 6,
-                        ),
-                      ),
                     ],
                   ),
                 ),
