@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:projet_sigh_grp1/common-widget/header/header_widget.dart';
 import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'dart:convert';
+import 'package:projet_sigh_grp1/pages/equipments/services/equipment_service.dart'; // Adapte le chemin
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:projet_sigh_grp1/shared/local_database/db-creator.dart'; // Ajuste le chemin selon ton projet
 
@@ -15,19 +17,11 @@ class ConsumptionPage extends StatefulWidget {
 class _ConsumptionPageState extends State<ConsumptionPage> {
   // Structure pour stocker les données avec mois et année
   Map<String, double> consumptionData = {
-    '2025-01': 150,
-    '2025-02': 180,
-    '2025-03': 170,
-    '2025-04': 190,
-    '2025-05': 200,
-    '2025-06': 220,
-    '2025-07': 210,
-    '2025-08': 230,
-    '2025-09': 215,
-    '2025-10': 205,
-    '2025-11': 195,
-    '2025-12': 185,
-    '2026-01': 175,
+
+  };
+
+  Map<String, double> kwhPricePerMonth = {
+
   };
 
   int? touchedIndex;
@@ -42,17 +36,48 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
   final TextEditingController consumptionController = TextEditingController();
 
   final TextEditingController kwhPriceController = TextEditingController(text: '0.20');
-  double kwhPrice = 0.20; // Prix par défaut en €/kWh
+  final TextEditingController pricePerKwhController = TextEditingController();
+  double kwhPrice = 0.20;
+
+  InventoryStats? nextMonthPrediction;     // ← AJOUTE ÇA
+  bool isLoadingPrediction = false;        // ← ET ÇA
 
   @override
   void initState() {
     super.initState();
-    _loadKwhPrice(); // Charge le prix au démarrage
+    _loadAllData();
+    _loadPrediction();
+  }
+
+  Future<void> _loadAllData() async {
+    await _loadConsumptionData();
+    await _loadKwhPricesPerMonth();
+  }
+
+  Future<void> _loadConsumptionData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('consumption_data');
+    if (jsonString != null) {
+      try {
+        final Map<String, dynamic> decoded = jsonDecode(jsonString);
+        if (mounted) {
+          setState(() {
+            consumptionData = decoded.map((key, value) => MapEntry(
+              key,
+              (value as num).toDouble(),
+            ));
+          });
+        }
+      } catch (e) {
+        print('Erreur chargement consumptionData: $e');
+      }
+    }
   }
 
   @override
   void dispose() {
     consumptionController.dispose();
+    pricePerKwhController.dispose();
     super.dispose();
   }
 
@@ -66,11 +91,45 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
     });
   }
 
+  Future<void> _loadPrediction() async {
+    setState(() => isLoadingPrediction = true);
+    try {
+      final prediction = await EquipmentService().getInventoryStats();
+      if (mounted) setState(() => nextMonthPrediction = prediction);
+    } catch (e) {
+      print('Erreur: $e');
+    } finally {
+      if (mounted) setState(() => isLoadingPrediction = false);
+    }
+  }
+
+
   // Sauvegarder le prix du kWh dans SharedPreferences
   Future<void> _saveKwhPrice(double price) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('kwh_price', price);
   }
+
+  Future<void> _loadKwhPricesPerMonth() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('kwh_price_per_month');
+    if (jsonString != null) {
+      final Map<String, dynamic> decoded = jsonDecode(jsonString);
+      setState(() {
+        kwhPricePerMonth = decoded.map((key, value) => MapEntry(
+          key,
+          (value as num).toDouble(),
+        ));
+      });
+    }
+  }
+
+  Future<void> _saveKwhPricesPerMonth() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = jsonEncode(kwhPricePerMonth);
+    await prefs.setString('kwh_price_per_month', jsonString);
+  }
+
 
   List<MapEntry<String, double>> getFilteredData() {
     var entries = consumptionData.entries.toList();
@@ -157,6 +216,24 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
 
   Widget _buildPeriodSelector() {
     var allPeriods = consumptionData.keys.toList()..sort();
+
+    // 🔥 VALIDATION ROBUSTE DES PÉRIODES
+    if (allPeriods.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: const Text('Aucune période disponible'),
+      );
+    }
+
+    // Corriger startPeriod si invalide
+    if (!allPeriods.contains(startPeriod)) {
+      startPeriod = allPeriods.first;
+    }
+
+    // Corriger endPeriod si invalide (doit être >= startPeriod)
+    if (!allPeriods.contains(endPeriod) || endPeriod.compareTo(startPeriod) < 0) {
+      endPeriod = allPeriods.last;
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -251,30 +328,7 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
             ],
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Prix du kWh',
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
           const SizedBox(height: 5),
-          TextField(
-            controller: kwhPriceController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              suffixText: '€/kWh',
-              hintText: kwhPrice.toStringAsFixed(2), // Utilise le prix chargé
-            ),
-            onChanged: (value) {
-              double? newPrice = double.tryParse(value.replaceAll(',', '.'));
-              if (newPrice != null && newPrice > 0) {
-                setState(() {
-                  kwhPrice = newPrice;
-                });
-                _saveKwhPrice(newPrice);
-              }
-            },
-          ),
         ],
       ),
     );
@@ -314,6 +368,14 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
     double minY = values.reduce((a, b) => a < b ? a : b) - 20;
     double maxY = values.reduce((a, b) => a > b ? a : b) + 20;
 
+    // AJOUT : Inclure la prédiction dans min/max Y
+    if (nextMonthPrediction != null) {
+      minY = minY < 0 ? minY : 0;
+      maxY = (maxY > nextMonthPrediction!.monthlyConsumption)
+          ? maxY
+          : nextMonthPrediction!.monthlyConsumption + 20;
+    }
+
     // Calcul min et max pour le gradient de couleur
     double minConsumption = values.reduce((a, b) => a < b ? a : b);
     double maxConsumption = values.reduce((a, b) => a > b ? a : b);
@@ -325,15 +387,23 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
       }
 
       // Normaliser la valeur entre 0 et 1
-      double normalized = (consumption - minConsumption) / (maxConsumption - minConsumption);
+      double normalized = (consumption - minConsumption) /
+          (maxConsumption - minConsumption);
 
       // Interpolation du rouge (haute conso) au vert (basse conso)
       // Rouge pour normalized proche de 1, vert pour normalized proche de 0
       return Color.lerp(
-        Colors.green,      // Basse consommation
-        Colors.red,        // Haute consommation
+        Colors.green, // Basse consommation
+        Colors.red, // Haute consommation
         normalized,
       )!;
+    }
+
+      List<FlSpot> predictionSpot = [];
+      if (nextMonthPrediction != null && filteredData.isNotEmpty) {
+        predictionSpot = [
+          FlSpot(filteredData.length.toDouble(), nextMonthPrediction!.monthlyConsumption)
+        ];
     }
 
     return Container(
@@ -371,23 +441,66 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                     getTooltipColor: (touchedSpot) => const Color(0xFF1E3A5F),
                     tooltipRoundedRadius: 8,
                     tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
                     getTooltipItems: (List<LineBarSpot> touchedSpots) {
-                      return touchedSpots.map((LineBarSpot touchedSpot) {
-                        final index = touchedSpot.x.toInt();
-                        final consumption = touchedSpot.y;
-                        final period = filteredData[index].key;
-                        var parts = period.split('-');
-                        final cost = consumption * kwhPrice;
-                        return LineTooltipItem(
-                          '${formatMonthYear(period)} ${parts[0]}\n${consumption.toStringAsFixed(0)}kWh\n${cost.toStringAsFixed(2)} €',
+
+                      if (touchedSpots.isEmpty) return [];
+
+                      // 🔥 On prend UN seul spot
+                      // priorité à la ligne principale (barIndex 0)
+                      final touchedSpot = touchedSpots.reduce(
+                            (a, b) => a.x > b.x ? a : b,
+                      );
+
+                      final index = touchedSpot.x.toInt();
+                      final consumption = touchedSpot.y;
+
+                      // 🔥 POINT PRÉDICTION
+                      if (index >= filteredData.length) {
+                        return [
+                          LineTooltipItem(
+                            'Prévision mois suivant\n'
+                                '${consumption.toStringAsFixed(0)} kWh',
+                            const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          )
+                        ];
+                      }
+
+                      // 🔥 POINT NORMAL
+                      final period = filteredData[index].key;
+                      var parts = period.split('-');
+
+                      final priceForMonth = kwhPricePerMonth[period];
+                      final cost = priceForMonth != null ? consumption * priceForMonth : null;
+
+                      String tooltipText =
+                          '${formatMonthYear(period)} ${parts[0]}\n'
+                          '${consumption.toStringAsFixed(0)} kWh';
+
+                      if (priceForMonth != null) {
+                        tooltipText += '\n${priceForMonth.toStringAsFixed(3)} €/kWh'
+                            '\n${cost!.toStringAsFixed(2)} €';
+                      } else {
+                        tooltipText += '\nPrix kWh: N/A';
+                      }
+
+                      return [
+                        LineTooltipItem(
+                          tooltipText,
                           const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
-                        );
-                      }).toList();
+                        )
+                      ];
                     },
+
                   ),
                   touchCallback: (FlTouchEvent event, LineTouchResponse? touchResponse) {
                     setState(() {
@@ -445,8 +558,8 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      interval: 50,
-                      reservedSize: 40,
+                      interval: null,
+                      reservedSize: 50,
                       getTitlesWidget: (value, meta) {
                         return Text(
                           '${value.toInt()}kWh',
@@ -461,7 +574,9 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                 ),
                 borderData: FlBorderData(show: false),
                 minX: 0,
-                maxX: (filteredData.length - 1).toDouble(),
+                maxX: predictionSpot.isNotEmpty
+                    ? filteredData.length.toDouble()
+                    : (filteredData.length - 1).toDouble(),
                 minY: minY,
                 maxY: maxY,
                 lineBarsData: [
@@ -495,6 +610,15 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                       color: const Color(0xFF1E3A5F).withOpacity(0.1),
                     ),
                   ),
+                  if (predictionSpot.isNotEmpty)
+                    LineChartBarData(
+                      spots: predictionSpot,
+                      isCurved: true,
+                      dashArray: [6, 4], // ligne en pointillés
+                      color: Colors.orange,
+                      barWidth: 2,
+                      dotData: FlDotData(show: true),
+                    ),
                 ],
               ),
             ),
@@ -584,6 +708,17 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                         suffixText: 'kWh',
                       ),
                     ),
+                    const SizedBox(height: 15),
+                    TextField(
+                      controller: pricePerKwhController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Prix du kWh',
+                        border: OutlineInputBorder(),
+                        suffixText: '€/kWh',
+                      ),
+                    ),
+
                   ],
                 ),
               ),
@@ -611,18 +746,24 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
     );
   }
 
-  void _addConsumption() {
-    if (consumptionController.text.isEmpty) {
+  Future<void> _addConsumption() async {
+    if (consumptionController.text.isEmpty || pricePerKwhController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez entrer une valeur')),
+        const SnackBar(content: Text('Veuillez entrer une consommation et un prix du kWh')),
       );
       return;
     }
 
-    double? consumption = double.tryParse(consumptionController.text);
-    if (consumption == null) {
+    final consumption = double.tryParse(
+      consumptionController.text.replaceAll(',', '.'),
+    );
+    final pricePerKwh = double.tryParse(
+      pricePerKwhController.text.replaceAll(',', '.'),
+    );
+
+    if (consumption == null || pricePerKwh == null || pricePerKwh <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Valeur invalide')),
+        const SnackBar(content: Text('Valeurs invalides')),
       );
       return;
     }
@@ -632,13 +773,26 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
 
     setState(() {
       consumptionData[key] = consumption;
+      kwhPricePerMonth[key] = pricePerKwh;
     });
 
+    await _saveConsumptionData();
+    await _saveKwhPricesPerMonth();
+
+    _saveKwhPricesPerMonth();
+
     consumptionController.clear();
+    pricePerKwhController.clear();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Consommation ajoutée pour $key')),
     );
+  }
+
+  Future<void> _saveConsumptionData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = jsonEncode(consumptionData);
+    await prefs.setString('consumption_data', jsonString);
   }
 
   Widget _buildStatsCards() {
