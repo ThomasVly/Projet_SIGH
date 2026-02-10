@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,11 +34,37 @@ class Equipment {
   })  : _hasCustomValues = hasCustomValues,
         createdAt = createdAt ?? DateTime.now();
 
-  // Méthode statique pour récupérer le prix du kWh
   static Future<double> getKwhPrice() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble('kwh_price') ?? 0.20;
+
+    // Récupérer les prix par mois depuis SharedPreferences
+    final jsonString = prefs.getString('kwh_price_per_month');
+
+    if (jsonString != null) {
+      try {
+        final Map<String, dynamic> pricesMap = jsonDecode(jsonString);
+        final Map<String, double> kwhPrices = {
+          for (var entry in pricesMap.entries)
+            entry.key: (entry.value as num).toDouble()
+        };
+
+        // Trier par clé (format "YYYY-MM") et prendre la plus récente
+        if (kwhPrices.isNotEmpty) {
+          final sortedKeys = kwhPrices.keys.toList()
+            ..sort((a, b) => b.compareTo(a)); // Ordre décroissant (plus récent en premier)
+          return kwhPrices[sortedKeys.first]!;
+        }
+      } catch (e) {
+        print('Erreur décodage kwh_price_per_month: $e');
+      }
+    }
+
+    // Fallback si aucune donnée
+    return 0.20;
   }
+
+
+
 
   // Getter pour le prix (récupère depuis le cache ou SharedPreferences)
   Future<double> get pricePerKwh async {
@@ -69,7 +97,6 @@ class Equipment {
       'icon_font_package': icon?.fontPackage,
       'has_custom_values': _hasCustomValues ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
-      'price_per_kwh': _cachedKwhPrice ?? 0.20,
     };
   }
 
