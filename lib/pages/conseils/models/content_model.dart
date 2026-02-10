@@ -49,33 +49,73 @@ class ContentModel {
     };
   }
 
+  /// Retourne la liste des tags sous forme de liste
+  List<String> getTagsList() {
+    return _splitTags(tags);
+  }
+
+  static List<String> _splitTags(String rawTags) {
+    if (rawTags.trim().isEmpty) return const [];
+    return rawTags
+        .split(',')
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  static String? _firstTagOrNull(String rawTags) {
+    final list = _splitTags(rawTags);
+    return list.isEmpty ? null : list.first;
+  }
+
+  static String _inferCategoryFromTagsOrDefault({
+    required String rawTags,
+    required String defaultCategory,
+  }) {
+    final firstTag = _firstTagOrNull(rawTags);
+    // On garde la valeur du tag telle quelle (accents compris) pour l'affichage.
+    return (firstTag == null || firstTag.trim().isEmpty)
+        ? defaultCategory
+        : firstTag;
+  }
+
   /// Crée un objet ContentModel depuis une Map SQLite
   factory ContentModel.fromMap(Map<String, dynamic> map) {
+    final tags = map['tags'] as String;
+
+    final rawCategory = (map['category'] as String?);
+    final category = (rawCategory == null || rawCategory.trim().isEmpty)
+        ? _inferCategoryFromTagsOrDefault(
+            rawTags: tags,
+            defaultCategory: 'Électricité',
+          )
+        : rawCategory;
+
     return ContentModel(
       id: map['id'] as int?,
       remoteId: map['remoteId'] as String?,
       title: map['title'] as String,
-      tags: map['tags'] as String,
+      tags: tags,
       description: (map['description'] as String?) ?? '',
       hasBeenRead: map['hasBeenRead'] == 1,
       notation: map['notation'] as int,
       isFavorite: map['isFavorite'] == 1,
       type: map['type'] as String,
-      category: (map['category'] as String?) ?? 'Électricité', // Valeur par défaut si null
-      readingTime: (map['readingTime'] as int?) ?? 5, // Valeur par défaut si null
+      category: category,
+      readingTime: (map['readingTime'] as int?) ?? 5,
       isFeatured: (map['isFeatured'] ?? 0) == 1,
       pdfUrl: (map['pdfUrl'] as String?) ?? '',
     );
   }
 
-  /// Retourne la liste des tags sous forme de liste
-  List<String> getTagsList() {
-    return tags.split(',').map((tag) => tag.trim()).toList();
-  }
-
   /// Retourne l'icône correspondant à la catégorie
   String getCategoryIcon() {
     switch (category.toLowerCase()) {
+      case 'ademe':
+        return '🏛️';
+      case 'economie':
+      case 'économie':
+        return '💰';
       case 'chauffage':
         return '🔥';
       case 'électricité':

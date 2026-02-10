@@ -47,6 +47,14 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadData();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final name = await OnboardingService.getUserName();
+    setState(() {
+      _userName = name;
+    });
   }
 
   Widget _buildSectionDivider() {
@@ -149,14 +157,14 @@ class _HomePageState extends State<HomePage> {
             children: [
               // --- HEADER ---
               HeaderWidget(
-                userName: 'Clara',
+                userName: _userName,
                 isHomePage: true,
                 navigationContext: context,
               ),
 
               Expanded(
                 child: SingleChildScrollView(
-                controller: _scrollController,
+                  controller: _scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

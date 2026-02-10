@@ -3,6 +3,8 @@ import '../../common-widget/header/header_widget.dart';
 import '../../common-widget/navbar/navbar_widget.dart';
 import '../../shared/providers/user_provider.dart';
 import '../../shared/services/level_badge_service.dart';
+import '../../shared/services/onboarding_service.dart';
+import '../badges/services/badge_service.dart';
 import 'widgets/user_profile_card.dart';
 import 'widgets/avatar_selector_dialog.dart';
 import 'widgets/combined_badges_widget.dart';
@@ -33,10 +35,14 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUserProfile() async {
+    // Charger le prénom et la date de création depuis OnboardingService
+    final userName = await OnboardingService.getUserName();
+    final memberSince = await OnboardingService.getFormattedCreationDate();
+
     await _userProvider.initializeUser(
       id: '1',
-      userName: 'Utilisateur',
-      memberSince: 'Membre depuis décembre 2025',
+      userName: userName,
+      memberSince: memberSince,
     );
   }
 
@@ -107,6 +113,24 @@ class _ProfilePageState extends State<ProfilePage> {
                             );
                           }
 
+                          // Calculer le nombre de badges débloqués dynamiquement
+                          final levelBadgeService = LevelBadgeService();
+                          final unlockedLevelBadges = levelBadgeService.getUnlockedBadges(user.currentLevel);
+
+                          // Calculer les badges d'énergie débloqués
+                          final energyBadges = const BadgeService().fetchBadges(
+                            quizCount: user.quizCount,
+                            challengeCount: user.challengeCount,
+                            articleCount: user.articleCount,
+                            loginStreak: user.loginStreak,
+                            energySaved: user.energySaved,
+                            unlockedBadgesCount: 0,
+                          );
+                          final unlockedEnergyBadges = energyBadges.where((b) => b.isUnlocked).length;
+
+                          // Total des badges débloqués
+                          final totalBadgesUnlocked = unlockedLevelBadges.length + unlockedEnergyBadges;
+
                           return Column(
                             children: [
                               UserProfileCard(
@@ -114,7 +138,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 memberSince: user.memberSince,
                                 totalTests: user.totalTests,
                                 quizCount: user.quizCount,
-                                badges: user.badges,
+                                badges: totalBadgesUnlocked, // Utiliser le nombre calculé dynamiquement
                                 currentLevel: user.currentLevel,
                                 currentXP: user.currentXP,
                                 maxXP: user.maxXP,
@@ -224,7 +248,12 @@ class _ProfilePageState extends State<ProfilePage> {
               onTap: (index) {
                 // Navigation vers les autres pages
                 if (index != 4) {
-                  Navigator.pop(context);
+                  // Retourner à MainNavigation avec l'index approprié
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/main',
+                    (route) => false,
+                    arguments: index,
+                  );
                 }
               },
             ),

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'models/reminder.dart';
 import 'services/weather_service.dart';
 import '../../services/background_service.dart';
+import '../equipments/equipments_page.dart';
 
 // Couleurs du thème
 const Color kPrimaryDark = Color(0xFF003366);
@@ -979,12 +980,16 @@ class _RappelPageState extends State<RappelPage> {
                 children: [
                   const Text('⏰', style: TextStyle(fontSize: 24)),
                   const SizedBox(width: 12),
-                  Text(
-                    'Configurer les heures creuses',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
+                  Expanded(
+                    child: Text(
+                      'Configurer les heures creuses',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ),
                 ],
@@ -1009,7 +1014,8 @@ class _RappelPageState extends State<RappelPage> {
                       final slot = entry.value;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Plage ${index + 1}:',
@@ -1017,65 +1023,80 @@ class _RappelPageState extends State<RappelPage> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            _buildTimeButton(
-                              time: slot['start']!,
-                              label: 'Début',
-                              onTap: () async {
-                                final time = await showTimePicker(
-                                  context: context,
-                                  initialTime: slot['start']!,
-                                );
-                                if (time != null) {
-                                  setState(
-                                    () => _offPeakSlots[index]['start'] = time,
-                                  );
-                                  setDialogState(() {});
-                                  _createOffPeakReminders();
-                                  _savePreferences();
-                                }
-                              },
-                              colorScheme: colorScheme,
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 4),
-                              child: Icon(Icons.arrow_forward, size: 14),
-                            ),
-                            _buildTimeButton(
-                              time: slot['end']!,
-                              label: 'Fin',
-                              onTap: () async {
-                                final time = await showTimePicker(
-                                  context: context,
-                                  initialTime: slot['end']!,
-                                );
-                                if (time != null) {
-                                  setState(
-                                    () => _offPeakSlots[index]['end'] = time,
-                                  );
-                                  setDialogState(() {});
-                                  _createOffPeakReminders();
-                                  _savePreferences();
-                                }
-                              },
-                              colorScheme: colorScheme,
-                            ),
-                            if (_offPeakSlots.length > 1)
-                              IconButton(
-                                icon: Icon(
-                                  Icons.delete,
-                                  color: colorScheme.error,
-                                  size: 18,
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildTimeButton(
+                                    time: slot['start']!,
+                                    label: 'Début',
+                                    onTap: () async {
+                                      final time = await showTimePicker(
+                                        context: context,
+                                        initialTime: slot['start']!,
+                                      );
+                                      if (time != null) {
+                                        setState(
+                                          () => _offPeakSlots[index]['start'] =
+                                              time,
+                                        );
+                                        setDialogState(() {});
+                                        _createOffPeakReminders();
+                                        _savePreferences();
+                                      }
+                                    },
+                                    colorScheme: colorScheme,
+                                  ),
                                 ),
-                                onPressed: () {
-                                  setState(() => _offPeakSlots.removeAt(index));
-                                  setDialogState(() {});
-                                  _createOffPeakReminders();
-                                  _savePreferences();
-                                },
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                              ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 4),
+                                  child: Icon(Icons.arrow_forward, size: 14),
+                                ),
+                                Expanded(
+                                  child: _buildTimeButton(
+                                    time: slot['end']!,
+                                    label: 'Fin',
+                                    onTap: () async {
+                                      final time = await showTimePicker(
+                                        context: context,
+                                        initialTime: slot['end']!,
+                                      );
+                                      if (time != null) {
+                                        setState(
+                                          () => _offPeakSlots[index]['end'] =
+                                              time,
+                                        );
+                                        setDialogState(() {});
+                                        _createOffPeakReminders();
+                                        _savePreferences();
+                                      }
+                                    },
+                                    colorScheme: colorScheme,
+                                  ),
+                                ),
+                                if (_offPeakSlots.length > 1)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 4),
+                                    child: IconButton(
+                                      icon: Icon(
+                                        Icons.delete,
+                                        color: colorScheme.error,
+                                        size: 18,
+                                      ),
+                                      onPressed: () {
+                                        setState(
+                                          () => _offPeakSlots.removeAt(index),
+                                        );
+                                        setDialogState(() {});
+                                        _createOffPeakReminders();
+                                        _savePreferences();
+                                      },
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ],
                         ),
                       );
@@ -1742,11 +1763,8 @@ class _RappelPageState extends State<RappelPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () {
-          // TODO: Naviguer vers la page d'inventaire
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Navigation vers l\'inventaire (à venir)'),
-            ),
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EquipmentsPage()),
           );
         },
         borderRadius: BorderRadius.circular(16),

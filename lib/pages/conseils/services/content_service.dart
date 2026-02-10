@@ -149,6 +149,20 @@ class ContentService {
     return ContentModel.fromMap(maps[0]);
   }
 
+  /// Récupère l'article à la une pour un type donné (ex: 'fiche' ou 'tutorial').
+  Future<ContentModel?> getFeaturedContentByType(String type) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'Content',
+      where: 'isFeatured = ? AND type = ?',
+      whereArgs: [1, type],
+      limit: 1,
+    );
+
+    if (maps.isEmpty) return null;
+    return ContentModel.fromMap(maps[0]);
+  }
+
   /// Recherche par catégorie
   Future<List<ContentModel>> getContentsByCategory(String category) async {
     final db = await _dbHelper.database;
@@ -187,6 +201,31 @@ class ContentService {
       final tags = (map['tags'] as String).split(',');
       for (var tag in tags) {
         tagsSet.add(tag.trim());
+      }
+    }
+
+    return tagsSet.toList()..sort();
+  }
+
+  /// Récupère tous les tags uniques uniquement pour un type de contenu.
+  ///
+  /// Exemple: type='fiche' => uniquement les tags présents dans les fiches.
+  Future<List<String>> getAllTagsByType(String type) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'Content',
+      columns: const ['tags'],
+      where: 'type = ?',
+      whereArgs: [type],
+    );
+
+    final Set<String> tagsSet = {};
+    for (final map in maps) {
+      final raw = (map['tags'] as String?) ?? '';
+      if (raw.trim().isEmpty) continue;
+      for (final tag in raw.split(',')) {
+        final t = tag.trim();
+        if (t.isNotEmpty) tagsSet.add(t);
       }
     }
 

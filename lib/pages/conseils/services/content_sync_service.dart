@@ -76,12 +76,20 @@ class ContentSyncService {
     // category: on la déduit de description si possible, sinon fallback.
     final category = _deriveCategory(description, tags, title);
 
-    // readingTime: pas présent dans Firestore -> heuristique ou durée YouTube si possible.
-    var readingTime = _estimateReadingTimeMinutes(description);
+    // readingTime: maintenant supporté côté Firestore.
+    // Priorité:
+    // 1) Firestore `readingTime` (source de vérité)
+    // 2) durée YouTube (si lien YouTube)
+    // 3) estimation locale
+    final readingTimeFromFirestore = _asInt(doc['readingTime']);
+    var readingTime =
+        (readingTimeFromFirestore ?? _estimateReadingTimeMinutes(description))
+            .clamp(1, 240);
 
     // Si c'est un lien YouTube, on tente de récupérer la durée (fiable) via YouTube Data v3.
+    // On ne l'utilise que si Firestore n'a pas fourni readingTime.
     final videoId = _tryExtractYoutubeVideoId(detail);
-    if (videoId != null) {
+    if (videoId != null && readingTimeFromFirestore == null) {
       final durationService = YoutubeDurationService(apiKey: _youtubeApiKey);
       final seconds = await durationService.fetchDurationSeconds(videoId);
       if (seconds != null && seconds > 0) {
@@ -136,12 +144,33 @@ class ContentSyncService {
 
   ///TODO: Améliorer en fonction des besoins réels.
   String _deriveCategory(String? description, String tagsCsv, String title) {
+    // Nouvelle règle (simple et explicite):
+    // - Si on a au moins 1 tag, la catégorie devient le 1er tag.
+    //   -> permet d'avoir "ADEME" ou "Économie" comme catégories.
+    // - Sinon, on garde le fallback historique basé sur des mots-clés.
+    final tags = tagsCsv
+        .split(',')
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .toList(growable: false);
+
+    if (tags.isNotEmpty) {
+      final firstTagLower = tags.first.toLowerCase();
+      if (firstTagLower == 'ademe' ||
+          firstTagLower == 'économie' ||
+          firstTagLower == 'economie') {
+        return tags.first;
+      }
+    }
+
     final source = '${description ?? ''},$tagsCsv,$title'.toLowerCase();
 
     if (source.contains('chauffage') || source.contains('radiateur')) return 'Chauffage';
     if (source.contains('lavage') || source.contains('lave')) return 'Lavage';
     if (source.contains('electrom') || source.contains('électrom')) return 'Électroménager';
-    if (source.contains('électric') || source.contains('electric') || source.contains('éclairage')) {
+    if (source.contains('électric') ||
+        source.contains('electric') ||
+        source.contains('éclairage')) {
       return 'Électricité';
     }
 
@@ -181,6 +210,25 @@ class ContentSyncService {
     final s = raw.toString().toLowerCase().trim();
     if (s == 'true' || s == '1') return true;
     if (s == 'false' || s == '0') return false;
+    return null;
+  }
+
+  int? _asInt(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is int) return raw;
+    if (raw is double) return raw.round();
+    if (raw is num) return raw.toInt();
+
+    final s = raw.toString().trim();
+    if (s.isEmpty) return null;
+
+    // "5" -> 5 / "5.0" -> 5
+    final asInt = int.tryParse(s);
+    if (asInt != null) return asInt;
+
+    final asDouble = double.tryParse(s.replaceAll(',', '.'));
+    if (asDouble != null) return asDouble.round();
+
     return null;
   }
 

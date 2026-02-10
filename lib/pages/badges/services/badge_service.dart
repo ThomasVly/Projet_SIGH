@@ -39,9 +39,18 @@ class BadgeService {
     final ecoExpertUnlocked = energySaved >= 200;
 
     // Badge Perfectionniste (tous les autres badges débloqués)
-    final totalBadgesToUnlock = 7; // Tous sauf Perfectionniste
-    final perfectionnisteProgress = (unlockedBadgesCount / totalBadgesToUnlock).clamp(0.0, 1.0);
-    final perfectionnisteUnlocked = unlockedBadgesCount >= totalBadgesToUnlock;
+    // Compter les badges débloqués parmi Expert Quiz, Champion, Lecteur, Assidu, Économe, Éco-expert
+    final totalBadgesToUnlock = 6; // Tous sauf Premiers pas et Perfectionniste
+    int actualUnlockedCount = 0;
+    if (expertQuizUnlocked) actualUnlockedCount++;
+    if (championUnlocked) actualUnlockedCount++;
+    if (lecteurUnlocked) actualUnlockedCount++;
+    if (assiduUnlocked) actualUnlockedCount++;
+    if (economeUnlocked) actualUnlockedCount++;
+    if (ecoExpertUnlocked) actualUnlockedCount++;
+
+    final perfectionnisteProgress = (actualUnlockedCount / totalBadgesToUnlock).clamp(0.0, 1.0);
+    final perfectionnisteUnlocked = actualUnlockedCount >= totalBadgesToUnlock;
 
     return [
       const model.Badge(
@@ -126,7 +135,7 @@ class BadgeService {
         title: 'Perfectionniste',
         description: 'Vous avez débloqué tous les autres badges.',
         condition: 'Débloquer l\'ensemble des badges.',
-        progressLabel: '$unlockedBadgesCount/$totalBadgesToUnlock badges',
+        progressLabel: '$actualUnlockedCount/$totalBadgesToUnlock badges',
         progress: perfectionnisteProgress,
         status: perfectionnisteUnlocked ? model.BadgeStatus.unlocked : model.BadgeStatus.locked,
         icon: Icons.star_outline,
