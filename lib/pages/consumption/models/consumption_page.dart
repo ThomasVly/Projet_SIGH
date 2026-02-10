@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:projet_sigh_grp1/common-widget/header/header_widget.dart';
 import 'package:projet_sigh_grp1/pages/equipments/equipments_page.dart';
@@ -48,6 +50,7 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
   void initState() {
     super.initState();
     _loadKwhPrice(); // Charge le prix au démarrage
+    _saveConsumptionData();
   }
 
   @override
@@ -64,6 +67,18 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
       kwhPrice = savedPrice;
       kwhPriceController.text = savedPrice.toString();
     });
+  }
+
+  // Sauvegarder les données de consommation pour les autres pages
+  Future<void> _saveConsumptionData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String jsonData = jsonEncode(consumptionData);
+      await prefs.setString('consumption_data', jsonData);
+      debugPrint('✅ Données de consommation sauvegardées');
+    } catch (e) {
+      debugPrint('❌ Erreur sauvegarde données: $e');
+    }
   }
 
   // Sauvegarder le prix du kWh dans SharedPreferences
@@ -611,7 +626,7 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
     );
   }
 
-  void _addConsumption() {
+  Future<void> _addConsumption() async {
     if (consumptionController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez entrer une valeur')),
@@ -633,6 +648,7 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
     setState(() {
       consumptionData[key] = consumption;
     });
+    await _saveConsumptionData();
 
     consumptionController.clear();
 
