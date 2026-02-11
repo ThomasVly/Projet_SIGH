@@ -63,7 +63,6 @@ class _HomeReminderSectionState extends State<HomeReminderSection> {
                 onTap: () => _navigateToSettings(context),
                 child: const Padding(
                   padding: EdgeInsets.all(4.0),
-                  child: Icon(Icons.settings, size: 20, color: Color(0xFF405F90)),
                 ),
               ),
           ],

@@ -7,25 +7,35 @@ class DefisPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        top:false,
-        child: Column(
-          children: const [
-            HeaderWidget(
-              title: 'Défis',
-              isHomePage: false,
+      extendBody: true,
+      body: Stack(
+        children:[
+          // 1. Image d'arrière-plan fixe
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
             ),
-            SizedBox(height: 16),
-            Expanded(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: DefisMenuPage(), // 👉 le menu (Quiz / Défis / Stats)
+          ),
+          Column(
+            children: const [
+              HeaderWidget(
+                title: 'Défis',
+                isHomePage: false,
+                isConseilsPage: false,
               ),
-            ),
-          ],
-        ),
+              SizedBox(height: 16),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: DefisMenuPage(), // 👉 le menu (Quiz / Défis / Stats)
+                ),
+              ),
+            ],
+          ),
+        ]
       ),
     );
   }

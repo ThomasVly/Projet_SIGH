@@ -8,8 +8,10 @@ class HeaderWidget extends StatelessWidget {
   final String? title;
   final String? userName;
   final bool isHomePage;
+  final bool isConseilsPage;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onRefreshTap;
   final bool isCollapsed;
   final BuildContext? navigationContext;
   final Widget? trailing;
@@ -21,7 +23,9 @@ class HeaderWidget extends StatelessWidget {
     this.title,
     this.userName,
     this.isHomePage = false,
+    this.isConseilsPage = false,
     this.onNotificationTap,
+    this.onRefreshTap,
     this.onProfileTap,
     this.isCollapsed = false,
     this.navigationContext,
@@ -33,21 +37,27 @@ class HeaderWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Tailles différentes selon le state
-    final double verticalPadding = isCollapsed ? 14 : (isHomePage ? 48 : 32);
+    final double topPadding = isCollapsed
+        ? 14
+        : (isHomePage ? 80 :(isConseilsPage? 50 : 75) );
+    final double bottomPadding = isCollapsed
+        ? 14
+        : (isHomePage ? 40 : 25);
     final double horizontalPadding = isCollapsed ? 16 : 20;
     final double fontSize = isCollapsed ? 14 : 18;
     final double logoSize = isCollapsed ? 36 : 54;
     final double logoIconSize = isCollapsed ? 20 : 32;
     final double notifSize = isCollapsed ? 22 : 32;
-    final double bottomMargin = isCollapsed ? 8 : 20;
+    final double bottomMargin = isCollapsed ? 8 : 0;
 
-    final double statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
+      padding: EdgeInsets.only(
+        left: horizontalPadding,
+        right: horizontalPadding,
+        top: topPadding,
+        bottom: bottomPadding,
       ),
       margin: EdgeInsets.only(bottom: bottomMargin),
       decoration: BoxDecoration(
@@ -65,26 +75,19 @@ class HeaderWidget extends StatelessWidget {
         children: [
           // SVG des bâtiments en arrière-plan - sur tous les headers
           Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
-              ),
-              child: SvgPicture.asset(
-                'assets/images/buildings.svg',
-                fit: BoxFit.cover,
-                alignment: Alignment.bottomCenter,
-                colorFilter: ColorFilter.mode(
-                  Colors.white.withOpacity(0.85),
-                  BlendMode.srcIn,
-                ),
-              ),
-            ),
+              child: Transform.scale(
+      scale: 1.0,
+          child: SvgPicture.asset(
+            'assets/images/buildings.svg',
+            fit: BoxFit.cover,
+            alignment: Alignment.bottomCenter,
+                  )
+              )
           ),
           // Contenu du header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               // Bouton retour (si showBackButton = true)
               if (showBackButton)
@@ -170,7 +173,7 @@ class HeaderWidget extends StatelessWidget {
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(0),
                     child: Icon(
                       Icons.notifications_none,
                       color: Colors.white,
@@ -182,6 +185,48 @@ class HeaderWidget extends StatelessWidget {
               // Trailing widget (pour le bouton d'aide)
               if (!isHomePage && trailing != null)
                 trailing!,
+              if (isConseilsPage)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4), // ✅ Ajuste l'alignement vertical
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.settings, color: Colors.white, size: 28),
+                        tooltip: 'Paramètres des conseils',
+                        padding: const EdgeInsets.all(8), // ✅ Padding uniforme
+                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44), // ✅ Taille minimale
+                        onPressed: () {
+                          if (onNotificationTap != null) {
+                            onNotificationTap!();
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.cloud_download, color: Colors.white, size: 28),
+                        tooltip: 'Sync Firestore',
+                        padding: const EdgeInsets.all(8), // ✅ Padding uniforme
+                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44), // ✅ Taille minimale
+                        onPressed: () {
+                          if (onProfileTap != null) {
+                            onProfileTap!();
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.white, size: 28),
+                        tooltip: 'Reset DB',
+                        padding: const EdgeInsets.all(8), // ✅ Padding uniforme
+                        constraints: const BoxConstraints(minWidth: 44, minHeight: 44), // ✅ Taille minimale
+                        onPressed: () {
+                          if (onRefreshTap != null) {
+                            onRefreshTap!();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ],

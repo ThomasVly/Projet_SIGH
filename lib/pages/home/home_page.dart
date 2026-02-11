@@ -173,7 +173,7 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
+                      const SizedBox(height: 36),
                       // --- SECTION 1: DASHBOARD ---
                       const Text(
                         'Ton suivi de consommation',

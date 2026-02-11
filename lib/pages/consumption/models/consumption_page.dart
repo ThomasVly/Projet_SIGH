@@ -153,20 +153,25 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        top: false,
-        child: Stack(
+      extendBody: true,
+      body: Stack(
+        children: [
+          // 1. Image d'arrière-plan fixe
+          Positioned.fill(
+          child: Image.asset(
+            'assets/images/background.png',
+            fit: BoxFit.cover,
+            ) ,
+          ),
+          // 2. Contenu scrollable par-dessus
+          Column(
           children: [
-            SingleChildScrollView(
+          // --- HEADER ---
+          HeaderWidget(title: 'Suivi de consommation'),
+          Expanded(
+            child: SingleChildScrollView(
               child: Column(
                 children: [
-                  HeaderWidget(
-                    title: 'Suivi de consommation',
-                    isHomePage: false,
-                    isCollapsed: false,
-                    navigationContext: context,
-                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                     child: Column(
@@ -210,8 +215,10 @@ class _ConsumptionPageState extends State<ConsumptionPage> {
                 ],
               ),
             ),
-          ],
+          )
+        ],
         ),
+      ]
       ),
     );
   }
