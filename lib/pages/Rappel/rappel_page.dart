@@ -329,23 +329,19 @@ class _RappelPageState extends State<RappelPage> {
           ),
         );
 
-        // Rappel fin heures creuses (15 min avant)
-        final endHour = endTime.hour == 0 && endTime.minute < 15
-            ? 23
-            : (endTime.minute < 15 ? endTime.hour - 1 : endTime.hour);
-        final endMinute = endTime.minute < 15
-            ? 60 - (15 - endTime.minute)
-            : endTime.minute - 15;
+        // Rappel fin heures creuses ()
+        final endHour = endTime.hour;
+        final endMinute = endTime.minute;
 
         _reminders.add(
           Reminder(
             id: _nextId++,
             title: 'Fin heures creuses$plageNum',
             description:
-                'Les heures creuses se terminent dans 15 min (à ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')})',
+            'Les heures creuses se terminent (à ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')})',
             type: ReminderType.peakHours,
             frequency: _offPeakFrequency,
-            scheduledTime: DateTime(2024, 1, 1, endHour, endMinute),
+            scheduledTime: DateTime(2024, 1, 1, endHour, endMinute), // Utilise l'heure exacte
             isActive: true,
           ),
         );
