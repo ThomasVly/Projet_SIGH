@@ -6,6 +6,7 @@ import 'services/content_sync_service.dart';
 import 'conseils_settings_page.dart';
 import '../../shared/navigation/route_observer.dart';
 import 'services/conseils_preferences_service.dart';
+import '../../common-widget/header/header_widget.dart';
 
 
 /// Page des conseils avec onglets Fiches infos et Tutoriels
@@ -312,100 +313,79 @@ class _ConseilsPageState extends State<ConseilsPage>
     final isFichesTab = _tabController.index == 0;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF003366)))
-          : Column(
-              children: [
-                _buildHeader(
-                  onTempResetDbPressed: _resetDbAndReload,
-                ),
-                _buildTabs(),
-                _buildSearchBar(
-                  query: isFichesTab ? _searchQueryFiches : _searchQueryTutoriels,
-                  onChanged: (value) {
-                    setState(() {
-                      if (isFichesTab) {
-                        _searchQueryFiches = value;
-                      } else {
-                        _searchQueryTutoriels = value;
-                      }
-                    });
-                  },
-                ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildTabContent(
-                        _filterContents(
-                          _fiches,
-                          searchQuery: _searchQueryFiches,
-                          selectedTag: _selectedTagFiches,
-                        ),
-                        featured: _featuredFiche,
-                      ),
-                      _buildTabContent(
-                        _filterContents(
-                          _tutoriels,
-                          searchQuery: _searchQueryTutoriels,
-                          selectedTag: _selectedTagTutoriels,
-                        ),
-                        featured: _featuredTutoriel,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+    backgroundColor: Colors.white,
+    body: Column(
+      children: [
+        _buildHeader(),
+        _buildTabs(),
+        _buildSearchBar(
+          query: isFichesTab ? _searchQueryFiches : _searchQueryTutoriels,
+          onChanged: (value) {
+            setState(() {
+              if (isFichesTab) {
+                _searchQueryFiches = value;
+              } else {
+                _searchQueryTutoriels = value;
+              }
+            });
+          },
+        ),
+        Expanded(
+          child: _isLoading  // ✅ Condition déplacée ici
+              ? const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF003366),
             ),
+          )
+              : TabBarView(  // ✅ Contenu normal
+            controller: _tabController,
+            children: [
+              _buildTabContent(
+                _filterContents(
+                  _fiches,
+                  searchQuery: _searchQueryFiches,
+                  selectedTag: _selectedTagFiches,
+                ),
+                featured: _featuredFiche,
+              ),
+              _buildTabContent(
+                _filterContents(
+                  _tutoriels,
+                  searchQuery: _searchQueryTutoriels,
+                  selectedTag: _selectedTagTutoriels,
+                ),
+                featured: _featuredTutoriel,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
     );
   }
 
   /// Construit le header bleu avec titre uniquement
-  Widget _buildHeader({VoidCallback? onTempResetDbPressed}) {
-    return Container(
-      color: const Color(0xFF003366),
-      padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'Conseils',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+  Widget _buildHeader() {
+    return HeaderWidget(
+      title: 'Conseils',
+      isConseilsPage: true,
+      navigationContext: context,
+      onNotificationTap: () async {
+        // Bouton settings
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const ConseilsSettingsPage(),
           ),
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.settings, color: Colors.white, size: 28),
-                tooltip: 'Paramètres des conseils',
-                onPressed: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const ConseilsSettingsPage(),
-                    ),
-                  );
-                  // Refresh immédiat au retour.
-                  await _refreshConseilsPreferences();
-                },
-              ),
-              // TEMP: force la sync Firestore -> SQLite
-              IconButton(
-                icon: const Icon(Icons.cloud_download, color: Colors.white, size: 28),
-                onPressed: _syncFromFirestoreAndReload,
-                tooltip: 'Sync Firestore',
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white, size: 28),
-                onPressed: onTempResetDbPressed,
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+        await _refreshConseilsPreferences();
+      },
+      onProfileTap: () {
+        // Bouton sync Firestore
+        _syncFromFirestoreAndReload();
+      },
+      onRefreshTap: () async {
+        await _resetDbAndReload();
+      },
     );
   }
 
