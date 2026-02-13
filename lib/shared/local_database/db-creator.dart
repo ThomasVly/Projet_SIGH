@@ -29,11 +29,67 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 7, // Incrémentation (ajout colonne description)
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
       onOpen: (db) async {
       },
     );
+  }
+
+  /// Migration de la base de données
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 4) {
+      // Ajouter les nouvelles colonnes à la table Content si elles n'existent pas
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN category TEXT NOT NULL DEFAULT "Électricité"');
+      } catch (e) {
+        print('Colonne category déjà existante ou erreur: $e');
+      }
+
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN readingTime INTEGER NOT NULL DEFAULT 5');
+      } catch (e) {
+        print('Colonne readingTime déjà existante ou erreur: $e');
+      }
+
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN isFeatured BOOLEAN NOT NULL DEFAULT 0');
+      } catch (e) {
+        print('Colonne isFeatured déjà existante ou erreur: $e');
+      }
+
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN pdfUrl TEXT NOT NULL DEFAULT ""');
+      } catch (e) {
+        print('Colonne pdfUrl déjà existante ou erreur: $e');
+      }
+    }
+
+    // Ajout du support de synchronisation Firestore -> SQLite
+    if (oldVersion < 6) {
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN remoteId TEXT');
+      } catch (e) {
+        print('Colonne remoteId déjà existante ou erreur: $e');
+      }
+
+      // Index unique pour éviter les doublons lors des upserts
+      try {
+        await db.execute('CREATE UNIQUE INDEX idx_content_remote_id ON Content(remoteId)');
+      } catch (e) {
+        print('Index idx_content_remote_id déjà existant ou erreur: $e');
+      }
+    }
+
+    // Ajout d'une description (Firestore -> SQLite)
+    if (oldVersion < 7) {
+      try {
+        await db.execute('ALTER TABLE Content ADD COLUMN description TEXT NOT NULL DEFAULT ""');
+      } catch (e) {
+        print('Colonne description déjà existante ou erreur: $e');
+      }
+    }
   }
 
   /// Crée la table Users
@@ -56,12 +112,18 @@ class DatabaseHelper {
     var createContentTable  = ('''
       CREATE TABLE Content (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        remoteId TEXT,
         title TEXT NOT NULL,
         tags TEXT NOT NULL,
-        hasBeenRead BOOLEAN NOT NULL,
+        description TEXT NOT NULL,
+        hasBeenRead BOOLEAN NOT NULL DEFAULT 0,
         notation INTEGER NOT NULL,
-        isFavorite BOOLEAN NOT NULL,
-        type TEXT NOT NULL
+        isFavorite BOOLEAN NOT NULL DEFAULT 0,
+        type TEXT NOT NULL,
+        category TEXT NOT NULL,
+        readingTime INTEGER NOT NULL,
+        isFeatured BOOLEAN NOT NULL DEFAULT 0,
+        pdfUrl TEXT NOT NULL
       )
     ''');
     return createContentTable;
@@ -164,6 +226,21 @@ class DatabaseHelper {
     return createBadgesTable;
   }
 
+  String initHomeInventoryTable() {
+    return '''
+      CREATE TABLE home_inventory_equipments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        room_name TEXT NOT NULL,
+        average_consumption REAL NOT NULL,
+        average_cost REAL NOT NULL,
+        usage_time REAL NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''';
+  }
+
   Future _createDB(Database db, int version) async {
     await db.execute(initUserTable());
     await db.execute(initContentTable());
@@ -174,6 +251,7 @@ class DatabaseHelper {
     await db.execute(initRemindersTable());
     await db.execute(initBadgesTable());
     await db.execute(initEquipmentsTable());
+    await db.execute(initHomeInventoryTable());
 
     // Indexs pour améliorer les performances de recherche
     await db.execute('CREATE INDEX idx_user ON Users(username)');
@@ -182,6 +260,9 @@ class DatabaseHelper {
     await db.execute('CREATE INDEX idx_challenge ON Challenges(id)');
     await db.execute('CREATE INDEX idx_quiz ON Quizzes(name)');
     await db.execute('CREATE INDEX idx_content ON Content(title,tags,type)');
+
+    // Index unique pour support remoteId (Firestore)
+    await db.execute('CREATE UNIQUE INDEX idx_content_remote_id ON Content(remoteId)');
   }
 
   /// Ferme la base de données
@@ -197,5 +278,20 @@ class DatabaseHelper {
     print('Chemin de la base de données SQLite :');
     print(path);
     print('===========================================');
+  }
+
+  /// Supprime complètement la base de données (utile pour les migrations importantes)
+  Future<void> deleteDatabase() async {
+    final path = await getDatabasePath();
+    await databaseFactory.deleteDatabase(path);
+    _database = null;
+    print('Base de données supprimée avec succès');
+  }
+
+  /// Réinitialise complètement la base de données
+  Future<void> resetDatabase() async {
+    await deleteDatabase();
+    _database = await _initDB('TEMPDBNAME.db');
+    print('Base de données réinitialisée avec succès');
   }
 }
